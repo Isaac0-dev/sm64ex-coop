@@ -8,7 +8,7 @@ Run `./extract_assets.py --clean && make clean` or `make distclean` to remove RO
 
 [Instructions on how to play are available on the wiki.](https://github.com/djoslin0/sm64ex-coop/wiki/How-to-Play)
 
-- The easiest way is to download [coop-compiler](https://github.com/coop-compiler/coop-compiler/releases/latest/download/coop-compiler.exe)
+- The easiest way is to download [coop-compiler](https://github.com/Isaac0-dev/coop-compiler/releases/latest/download/coop-compiler.exe)
 
 ## Goal (accomplished)
 Create a mod for the PC port where multiple people can play online together.
