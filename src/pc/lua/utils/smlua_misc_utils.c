@@ -4,6 +4,7 @@
 #include "data/dynos.c.h"
 #include "game/bettercamera.h"
 #include "game/camera.h"
+#include "game/hardcoded.h"
 #include "game/hud.h"
 #include "pc/lua/smlua.h"
 #include "smlua_misc_utils.h"
@@ -45,6 +46,15 @@ void hud_hide(void) {
 
 void hud_show(void) {
     gOverrideHideHud = 0;
+}
+
+extern u8 gLastCollectedStarOrKey;
+s32 get_last_star_or_key(void) {
+    return gLastCollectedStarOrKey;
+}
+
+void set_last_star_or_key(u8 value) {
+    gLastCollectedStarOrKey = value;
 }
 
 s32 hud_get_value(enum HudDisplayValue type) {
@@ -272,26 +282,14 @@ bool is_game_paused(void) {
 
 ///
 
-bool warp_to_level(s32 aLevel, s32 aArea, s32 aAct) {
-    return dynos_warp_to_level(aLevel, aArea, aAct);
-}
-
-bool warp_restart_level(void) {
-    return dynos_warp_restart_level();
-}
-
-bool warp_exit_level(s32 aDelay) {
-    return dynos_warp_exit_level(aDelay);
-}
-
-bool warp_to_castle(s32 aLevel) {
-    return dynos_warp_to_castle(aLevel);
+bool is_transition_playing(void) {
+    return sTransitionUpdate != NULL || gWarpTransition.isActive;
 }
 
 ///
 
 u32 allocate_mario_action(u32 actFlags) {
-    actFlags = actFlags & (~((u32)0xFF));
+    actFlags = actFlags & (~((u32)0x3F));
     return actFlags | ACT_FLAG_CUSTOM_ACTION | gLuaMarioActionIndex++;
 }
 
@@ -330,12 +328,16 @@ void movtexqc_register(const char* name, s16 level, s16 area, s16 type) {
     dynos_movtexqc_register(name, level, area, type);
 }
 
+///
+
 f32 get_environment_region(u8 index) {
     if (gEnvironmentRegions != NULL && index <= gEnvironmentRegions[0]) {
         return gEnvironmentRegions[6 * (int)index];
     }
-    return -11000;
+    return gLevelValues.floorLowerLimit;
 }
+
+///
 
 void set_environment_region(u8 index, s32 value) {
     if (gEnvironmentRegions != NULL && index <= gEnvironmentRegions[0]) {
@@ -343,14 +345,26 @@ void set_environment_region(u8 index, s32 value) {
     }
 }
 
+///
+
 void set_override_fov(f32 fov) {
     gOverrideFOV = fov;
 }
+
+///
 
 void set_override_near(f32 near) {
     gOverrideNear = near;
 }
 
+///
+
 void set_override_far(f32 far) {
     gOverrideFar = far;
+}
+
+///
+
+void add_scroll_target(u32 index, const char* name, u32 offset, u32 size) {
+    dynos_add_scroll_target(index, name, offset, size);
 }

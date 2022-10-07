@@ -9,7 +9,7 @@
 #include "bass_audio/bass_audio_helpers.h"
 #include "pc/debuglog.h"
 
-#define MAX_AUDIO_OVERRIDE 64
+#define MAX_AUDIO_OVERRIDE 128
 
 struct AudioOverride {
     bool enabled;
@@ -222,17 +222,27 @@ struct BassAudio* audio_load_internal(const char* filename, bool isStream) {
     // remember file
     bassAudio->file = modFile;
 
-    // copy audio into rawData
+    // open file pointer
+    bool opened = false;
     if (modFile->fp == NULL) {
         modFile->fp = fopen(modFile->cachedPath, "rb");
         if (modFile->fp == NULL) {
             LOG_ERROR("Could not open mod file: %s", modFile->cachedPath);
             return NULL;
         }
+        opened = true;
     }
+
+    // copy data
     rewind(modFile->fp);
     bassAudio->rawData = (char*)malloc(modFile->size * sizeof(char));
     fread(bassAudio->rawData, modFile->size, 1, modFile->fp);
+
+    // close file pointer
+    if (opened) {
+        fclose(modFile->fp);
+        modFile->fp = NULL;
+    }
 
     // load audio and return it
     if (isStream) {

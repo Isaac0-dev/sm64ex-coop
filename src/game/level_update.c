@@ -1,5 +1,6 @@
 #include <ultra64.h>
 #include <stdbool.h>
+#include <time.h>
 
 #include "sm64.h"
 #include "seq_ids.h"
@@ -19,6 +20,7 @@
 #include "object_list_processor.h"
 #include "ingame_menu.h"
 #include "obj_behaviors.h"
+#include "object_helpers.h"
 #include "save_file.h"
 #include "hardcoded.h"
 #include "debug_course.h"
@@ -58,8 +60,9 @@ u8 gRejectInstantWarp = 0;
 
 s16 gChangeLevel = -1;
 s16 gChangeLevelTransition = -1;
-s16 gChangeAreaIndex = -1;
 s16 gChangeActNum = -1;
+
+static bool sFirstCastleGroundsMenu = true;
 
 // TODO: Make these ifdefs better
 const char *credits01[] = { "1GAME DIRECTOR", "SHIGERU MIYAMOTO" };
@@ -413,11 +416,6 @@ void init_mario_after_warp(void) {
 
             if (sWarpDest.type == WARP_TYPE_CHANGE_LEVEL || sWarpDest.type == WARP_TYPE_CHANGE_AREA) {
                 gPlayerSpawnInfos[i].areaIndex = sWarpDest.areaIdx;
-                // reset health
-                gMarioStates[i].health = 0x880;
-                gMarioStates[i].healCounter = 0;
-                gMarioStates[i].hurtCounter = 0;
-
                 if (i == 0) { load_mario_area(); }
             }
 
@@ -434,7 +432,7 @@ void init_mario_after_warp(void) {
         set_mario_initial_action(gMarioState, marioSpawnType, sWarpDest.arg);
 
         // remove offset from local mario during warps
-        if (sWarpDest.type == WARP_TYPE_SAME_AREA) {
+        if (sWarpDest.type == WARP_TYPE_SAME_AREA && marioSpawnType != MARIO_SPAWN_DOOR_WARP) {
             gMarioState[0].pos[0] = (s16)spawnNode->object->oPosX;
             gMarioState[0].pos[1] = (s16)spawnNode->object->oPosY;
             gMarioState[0].pos[2] = (s16)spawnNode->object->oPosZ;
@@ -519,6 +517,10 @@ void init_mario_after_warp(void) {
 
     if (gNetworkPlayerLocal != NULL) {
         network_player_update_course_level(gNetworkPlayerLocal, gCurrCourseNum, gCurrActStarNum, gCurrLevelNum, gCurrAreaIndex);
+    }
+
+    if (gMarioState->health <= 0x110) {
+        gMarioState->health = 0x880;
     }
 
     smlua_call_event_hooks(HOOK_ON_WARP);
@@ -662,6 +664,10 @@ void check_instant_warp(void) {
 }
 
 s16 music_changed_through_warp(s16 arg) {
+    if (arg == 0) {
+        return false;
+    }
+
     struct ObjectWarpNode *warpNode = area_get_warp_node(arg);
     s16 levelNum = warpNode->node.destLevel & 0x7F;
 
@@ -837,7 +843,8 @@ s16 level_trigger_warp(struct MarioState *m, s32 warpOp) {
                 break;
 
             case WARP_OP_DEATH:
-                if (m->numLives == 0) {
+                m->numLives--;
+                if (m->numLives <= -1) {
                     sDelayedWarpOp = WARP_OP_GAME_OVER;
                 }
                 sDelayedWarpTimer = 48;
@@ -855,7 +862,8 @@ s16 level_trigger_warp(struct MarioState *m, s32 warpOp) {
             case WARP_OP_WARP_FLOOR:
                 sSourceWarpNodeId = WARP_NODE_WARP_FLOOR;
                 if (area_get_warp_node(sSourceWarpNodeId) == NULL) {
-                    if (m->numLives >= 0) {
+                    m->numLives--;
+                    if (m->numLives <= -1) {
                         sDelayedWarpOp = WARP_OP_GAME_OVER;
                     } else {
                         sSourceWarpNodeId = WARP_NODE_DEATH;
@@ -953,7 +961,7 @@ void initiate_delayed_warp(void) {
             switch (sDelayedWarpOp) {
                 case WARP_OP_GAME_OVER:
                     gChangeLevel = gLevelValues.entryLevel;
-                    gMarioStates[0].numLives = 3;
+                    gMarioStates[0].numLives = 4;
                     gMarioStates[0].health = 0x880;
                     break;
 
@@ -1304,7 +1312,170 @@ static s32 play_mode_unused(void) {
     return 0;
 }
 
+void update_menu_level(void) {
+
+    // figure out level
+    int curLevel = 0;
+    switch (configMenuLevel) {
+        case 0:  curLevel = LEVEL_CASTLE_GROUNDS; break;
+        case 1:  curLevel = LEVEL_BOB;            break;
+        case 2:  curLevel = LEVEL_WF;             break;
+        case 3:  curLevel = LEVEL_WMOTR;          break;
+        case 4:  curLevel = LEVEL_JRB;            break;
+        case 5:  curLevel = LEVEL_SSL;            break;
+        case 6:  curLevel = LEVEL_TTM;            break;
+        case 7:  curLevel = LEVEL_SL;             break;
+        case 8:  curLevel = LEVEL_BBH;            break;
+        case 9:  curLevel = LEVEL_LLL;            break;
+        case 10: curLevel = LEVEL_THI;            break;
+        default: curLevel = LEVEL_CASTLE_GROUNDS; break;
+    }
+
+    // warp to level, this feels buggy
+    if (gCurrLevelNum != curLevel) {
+        if (curLevel == LEVEL_JRB) {
+            gChangeLevel = curLevel;
+            gChangeActNum = 2;
+        } else if (curLevel == LEVEL_THI) {
+            gChangeLevel = LEVEL_THI;
+        } else {
+            gChangeLevel = curLevel;
+            gChangeActNum = 6;
+        }
+    }
+
+    if (gCurrAreaIndex != 2 && gCurrLevelNum == LEVEL_THI) {
+        sWarpDest.type = WARP_TYPE_CHANGE_AREA;
+        sWarpDest.areaIdx = 2;
+        sWarpDest.nodeId = 0x0A;
+    }
+
+    // set sFirstCastleGroundsMenu to false to prevent wall hugging bug
+    if (curLevel != LEVEL_CASTLE_GROUNDS) {
+         sFirstCastleGroundsMenu = false;
+    }
+
+    struct Object *o;
+    // set mario/camera pos
+    switch (gCurrLevelNum) {
+        case LEVEL_CASTLE_GROUNDS:
+            if (!sFirstCastleGroundsMenu) {
+                vec3f_set(gMarioState->pos, -1328, 260, 4664);
+                vec3f_set(gLakituState.curPos, -1328, 390, 6064);
+                gMarioState->faceAngle[1] = 0;
+                gLakituState.nextYaw = gMarioState->faceAngle[1] + 0x8000;
+            }
+            break;
+        case LEVEL_BOB:
+            vec3f_set(gMarioState->pos, 7008, 864, 1943);
+            vec3f_set(gLakituState.curPos, 7909, 1064, 2843);
+            gMarioState->faceAngle[1] = 0x2000;
+
+            // delete all goombas as they interfere with the main menu
+            o = find_object_with_behavior(bhvGoomba);
+            if (o != NULL) {
+                obj_mark_for_deletion(o);
+            }
+            break;
+        case LEVEL_WF:
+            vec3f_set(gMarioState->pos, -2904, 2560, -327);
+            vec3f_set(gLakituState.curPos, -4504, 2760, -777);
+            gMarioState->faceAngle[1] = -15536;
+            break;
+        case LEVEL_WMOTR:
+            vec3f_set(gMarioState->pos, 3548, -2738, 4663);
+            vec3f_set(gLakituState.curPos, 3548, -2438, 6063);
+            gMarioState->faceAngle[1] = 0;
+            break;
+        case LEVEL_JRB:
+            vec3f_set(gMarioState->pos, 3639, 1536, 6202);
+            vec3f_set(gLakituState.curPos, 5039, 1736, 6402);
+            break;
+        case LEVEL_SSL:
+            vec3f_set(gMarioState->pos, -2048, 256, 961);
+            vec3f_set(gLakituState.curPos, -2048, 356, 2461);
+            gMarioState->faceAngle[1] = 0;
+            break;
+        case LEVEL_TTM:
+            vec3f_set(gMarioState->pos, 2488, 1460, 2011);
+            vec3f_set(gLakituState.curPos, 3488, 1763, 3411);
+            gMarioState->faceAngle[1] = 0x1000;
+            break;
+        case LEVEL_SL:
+            vec3f_set(gMarioState->pos, 5494, 1024, 443);
+            vec3f_set(gLakituState.curPos, 6994, 1124, 443);
+            gMarioState->faceAngle[1] = 0x4000;
+            break;
+        case LEVEL_BBH:
+            vec3f_set(gMarioState->pos, 666, -204, 5303);
+            vec3f_set(gLakituState.curPos, 666, -204, 6803);
+            gMarioState->faceAngle[1] = 0;
+
+            // delete all scuttlebugs as they interfere with the main menu
+            o = find_object_with_behavior(bhvScuttlebug);
+            if (o != NULL) {
+                obj_mark_for_deletion(o);
+            }
+            break;
+        case LEVEL_LLL:
+            vec3f_set(gMarioState->pos, -2376, 638, 956);
+            vec3f_set(gLakituState.curPos, -3576, 938, 1576);
+            gMarioState->faceAngle[1] = -0x2800;
+            break;
+        case LEVEL_THI:
+            vec3f_set(gMarioState->pos, -1010, 341, -324);
+            vec3f_set(gLakituState.curPos, -2246, 431, -324);
+            gMarioState->faceAngle[1] = -0x4000;
+
+            // delete all goombas as they interfere with the main menu
+            o = find_object_with_behavior(bhvGoomba);
+            if (o != NULL) {
+                obj_mark_for_deletion(o);
+            }
+            break;
+    }
+
+    gMarioState->health = 0x880;
+    // reset input
+    gMarioState->input = 0;
+    gMarioState->controller->rawStickX = 0;
+    gMarioState->controller->rawStickY = 0;
+    gMarioState->controller->stickX = 0;
+    gMarioState->controller->stickY = 0;
+
+    // figure out music
+    if (!configMenuSound || curLevel == LEVEL_CASTLE_GROUNDS) {
+        reset_volume();
+        disable_background_sound();
+        set_background_music(0, 0x0021, 0);
+    } else {
+        reset_volume();
+        disable_background_sound();
+
+        if (get_current_background_music() == 0x0021) {
+            if (curLevel == LEVEL_JRB) {
+                gChangeLevel = curLevel;
+                gChangeActNum = 2;
+            } else if (curLevel == LEVEL_THI) {
+                gChangeLevel = curLevel;
+                gChangeActNum = 6;
+            } else {
+                gChangeLevel = curLevel;
+                gChangeActNum = 6;
+            }
+        }
+    }
+}
+
 s32 update_level(void) {
+
+    // update main menu level
+    if (gDjuiInMainMenu) {
+        update_menu_level();
+    } else {
+        sFirstCastleGroundsMenu = false;
+    }
+
     s32 changeLevel = 0;
 
     if (gChangeLevel != -1) {
@@ -1334,8 +1505,12 @@ s32 update_level(void) {
             changeLevel = play_mode_normal();
             break;
         case PLAY_MODE_PAUSED:
-#ifndef DEVELOPMENT
-            changeLevel = play_mode_normal();
+#ifdef DEVELOPMENT
+            if (configDisableDevPause) {
+                changeLevel = play_mode_normal();
+            }
+#else
+                changeLevel = play_mode_normal();
 #endif
             if (sCurrPlayMode == PLAY_MODE_PAUSED) {
                 changeLevel = play_mode_paused();
@@ -1412,7 +1587,20 @@ s32 init_level(void) {
                 if (gMarioState->action != ACT_UNINITIALIZED) {
                     bool skipIntro = (gNetworkType == NT_NONE || gServerSettings.skipIntro != 0);
                     if (gDjuiInMainMenu && (gNetworkType == NT_NONE)) {
-                        set_mario_action(gMarioState, ACT_INTRO_CUTSCENE, 7);
+                        // pick random main menu level
+                        if (configMenuRandom) {
+                            int lower = 0, upper = 10;
+                            srand(time(0));
+                            int randLevel = (rand() % (upper - lower + 1)) + lower;
+                            configMenuLevel = randLevel;
+                        }
+
+                        if (configMenuLevel == 0 && sFirstCastleGroundsMenu) {
+                            set_mario_action(gMarioState, ACT_INTRO_CUTSCENE, 7);
+                        } else {
+                            set_mario_action(gMarioState, ACT_IDLE, 0);
+                        }
+
                     } else if (skipIntro || save_file_exists(gCurrSaveFileNum - 1)) {
                         set_mario_action(gMarioState, ACT_IDLE, 0);
                     } else {
@@ -1459,12 +1647,6 @@ s32 lvl_init_or_update(s16 initOrUpdate, UNUSED s32 unused) {
     switch (initOrUpdate) {
         case 0:
             result = init_level();
-
-            // HACK: play main menu music
-            // this is in a terrible spot but I couldn't find a better one.
-            if (gDjuiInMainMenu) {
-                set_background_music(0, 0x0021, 0);
-            }
 
             break;
         case 1:
@@ -1518,10 +1700,16 @@ s32 lvl_set_current_level(UNUSED s16 arg0, s32 levelNum) {
 
     sWarpCheckpointActive = FALSE;
     gCurrLevelNum = levelNum;
-    gCurrCourseNum = gLevelToCourseNumTable[levelNum - 1];
+    gCurrCourseNum = get_level_course_num(levelNum - 1);
 
-    if (gCurrDemoInput != NULL || gCurrCreditsEntry != NULL || gCurrCourseNum == COURSE_NONE) {
-        return 0;
+    bool foundHook = false;
+    bool hookUseActSelect = false;
+    smlua_call_event_hooks_use_act_select(HOOK_USE_ACT_SELECT, levelNum, &foundHook, &hookUseActSelect);
+
+    if (!foundHook || !hookUseActSelect) {
+        if (gCurrDemoInput != NULL || gCurrCreditsEntry != NULL || gCurrCourseNum == COURSE_NONE) {
+            return 0;
+        }
     }
 
     if (gCurrLevelNum != LEVEL_BOWSER_1 && gCurrLevelNum != LEVEL_BOWSER_2
@@ -1535,6 +1723,14 @@ s32 lvl_set_current_level(UNUSED s16 arg0, s32 levelNum) {
         gSavedCourseNum = gCurrCourseNum;
         nop_change_course();
         disable_warp_checkpoint();
+    }
+
+    if (gDjuiInMainMenu) {
+        return 0;
+    }
+
+    if (foundHook) {
+        return hookUseActSelect;
     }
 
     if (gCurrCourseNum > COURSE_STAGES_MAX || warpCheckpointActive) {

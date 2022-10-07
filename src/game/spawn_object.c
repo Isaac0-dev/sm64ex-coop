@@ -83,7 +83,7 @@ struct LinkedList *unused_try_allocate(struct LinkedList *destList,
  */
 struct Object *try_allocate_object(struct ObjectNode *destList, struct ObjectNode *freeList) {
     struct ObjectNode *nextObj = NULL;
-    
+
     if (destList == NULL || freeList == NULL) {
         fprintf(stderr, "FATAL ERROR: Failed to try and allocate a object because either the destList %p or freeList %p was NULL!\n", destList, freeList);
         return NULL;
@@ -105,7 +105,7 @@ struct Object *try_allocate_object(struct ObjectNode *destList, struct ObjectNod
     } else {
         return NULL;
     }
-    
+
     geo_remove_child(&nextObj->gfx.node);
     geo_add_child(&gObjParentGraphNode, &nextObj->gfx.node);
 
@@ -212,8 +212,9 @@ void unload_object(struct Object *obj) {
     obj->header.gfx.node.flags &= ~GRAPH_RENDER_CYLBOARD;
     obj->header.gfx.node.flags &= ~GRAPH_RENDER_ACTIVE;
 
-    if (obj->oSyncID != 0 && gNetworkType != NT_NONE) {
-        if (gSyncObjects[obj->oSyncID].syncDeathEvent) {
+    struct SyncObject* so = sync_object_get(obj->oSyncID);
+    if (so && gNetworkType != NT_NONE) {
+        if (so->syncDeathEvent) {
             network_send_object(obj);
         } else if (gNetworkType == NT_SERVER) {
             reservation_area_release(gNetworkPlayerLocal, obj->oSyncID);
@@ -222,9 +223,8 @@ void unload_object(struct Object *obj) {
         }
 
         // forget sync object
-        struct SyncObject* so = &gSyncObjects[obj->oSyncID];
         if ((obj == so->o) && (obj->behavior == so->behavior)) {
-            network_forget_sync_object(so);
+            sync_object_forget(so->id);
         }
 
         smlua_call_event_hooks_object_param(HOOK_ON_SYNC_OBJECT_UNLOAD, obj);
@@ -326,6 +326,7 @@ struct Object *allocate_object(struct ObjectNode *objList) {
     obj->areaTimer = 0;
     obj->areaTimerDuration = 0;
     obj->areaTimerRunOnceCallback = NULL;
+    obj->setHome = FALSE;
 
     obj->usingObj = NULL;
 
@@ -353,6 +354,7 @@ static void snap_object_to_floor(struct Object *obj) {
 struct Object *create_object(const BehaviorScript *bhvScript) {
     if (!bhvScript) { return NULL; }
     s32 objListIndex = OBJ_LIST_DEFAULT;
+    bool luaBehavior = smlua_is_behavior_hooked(bhvScript);
     const BehaviorScript *behavior = smlua_override_behavior(bhvScript);
 
     // If the first behavior script command is "begin <object list>", then
@@ -360,7 +362,7 @@ struct Object *create_object(const BehaviorScript *bhvScript) {
     if ((behavior[0] >> 24) == 0) {
         objListIndex = (behavior[0] >> 16) & 0xFFFF;
     }
-    
+
     if (objListIndex >= NUM_OBJ_LISTS) {
         fprintf(stderr, "Failed to create object with non-existent object list index %i with behavior script %p.\n", objListIndex, bhvScript);
         return NULL;
@@ -370,7 +372,7 @@ struct Object *create_object(const BehaviorScript *bhvScript) {
     struct Object *obj = allocate_object(objList);
     if (obj == NULL) { return NULL; }
 
-    obj->curBhvCommand = bhvScript;
+    obj->curBhvCommand = luaBehavior ? bhvScript : behavior;
     obj->behavior = behavior;
 
     if (objListIndex == OBJ_LIST_UNIMPORTANT) {

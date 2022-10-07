@@ -2,6 +2,8 @@
 #define CONFIGFILE_H
 
 #include <stdbool.h>
+#include "PR/ultratypes.h"
+#include "game/characters.h"
 
 #define CONFIGFILE_DEFAULT "sm64config.txt"
 
@@ -52,6 +54,8 @@ extern unsigned int configKeyDLeft[];
 extern unsigned int configKeyDRight[];
 extern unsigned int configStickDeadzone;
 extern unsigned int configRumbleStrength;
+extern unsigned int configGamepadNumber;
+extern bool         configBackgroundGamepad;
 #ifdef EXTERNAL_DATA
 extern bool         configPrecacheRes;
 #endif
@@ -86,11 +90,17 @@ extern unsigned int configStayInLevelAfterStar;
 extern unsigned int configNetworkSystem;
 extern char         configPlayerName[];
 extern unsigned int configPlayerModel;
-extern unsigned int configPlayerPalette;
+extern unsigned int configMenuLevel;
+extern bool         configMenuSound;
+extern bool         configMenuRandom;
+extern struct PlayerPalette configPlayerPalette;
 extern bool         configUncappedFramerate;
 extern unsigned int configFrameLimit;
 extern unsigned int configDrawDistance;
 extern bool         configDisablePopups;
+#ifdef DEVELOPMENT
+extern bool         configDisableDevPause;
+#endif
 extern bool         configDisableDownloadedModels;
 extern unsigned int configInterpolationMode;
 

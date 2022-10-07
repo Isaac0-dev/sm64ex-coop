@@ -57,7 +57,7 @@ static s8 D_8032CBE4 = 0;
 static s8 D_8032CBE8 = 0;
 static s8 D_8032CBEC[7] = { 2, 3, 2, 1, 2, 3, 2 };
 
-static u8 sStarsNeededForDialog[] = { 1, 3, 8, 30, 50, 70 };
+extern u8 gLastCollectedStarOrKey;
 
 static BehaviorScript* localDialogNPCBehavior = NULL;
 
@@ -247,8 +247,19 @@ s32 get_star_collection_dialog(struct MarioState *m) {
         return dialogID;
     }
 
-    for (s32 i = 0; i < ARRAY_COUNT(sStarsNeededForDialog); i++) {
-        s32 numStarsRequired = sStarsNeededForDialog[i];
+    if (!gBehaviorValues.ShowStarMilestones) { return 0; }
+
+    for (s32 i = 0; i < STARS_NEEDED_FOR_DIALOG_COUNT; i++) {
+        s32 numStarsRequired = 999;
+        switch (i) {
+            case 0: numStarsRequired = gBehaviorValues.starsNeededForDialog.dialog1; break;
+            case 1: numStarsRequired = gBehaviorValues.starsNeededForDialog.dialog2; break;
+            case 2: numStarsRequired = gBehaviorValues.starsNeededForDialog.dialog3; break;
+            case 3: numStarsRequired = gBehaviorValues.starsNeededForDialog.dialog4; break;
+            case 4: numStarsRequired = gBehaviorValues.starsNeededForDialog.dialog5; break;
+            case 5: numStarsRequired = gBehaviorValues.starsNeededForDialog.dialog6; break;
+        }
+
         if (m->prevNumStarsForDialog < numStarsRequired && m->numStars >= numStarsRequired) {
             dialogID = i + gBehaviorValues.dialogs.StarCollectionBaseDialog;
             break;
@@ -423,7 +434,7 @@ s32 act_reading_npc_dialog(struct MarioState *m) {
             continueDialogCallback = gContinueDialogFunction();
             gCurrentObject = tmp;
         }
-        if (!continueDialogCallback || m->usedObj == NULL || m->usedObj->activeFlags == ACTIVE_FLAG_DEACTIVATED || m->usedObj->behavior != localDialogNPCBehavior) {
+        if (!continueDialogCallback || m->usedObj == NULL || m->usedObj->activeFlags == ACTIVE_FLAG_DEACTIVATED || m->usedObj->behavior != smlua_override_behavior(localDialogNPCBehavior)) {
             set_mario_npc_dialog(m, 0, NULL);
         }
     }
@@ -637,7 +648,8 @@ s32 act_debug_free_move(struct MarioState *m) {
         pos[2] += 26.0f * speed * coss(m->intendedYaw);
     }
 
-    resolve_and_return_wall_collisions(pos, 60.0f, 50.0f);
+    struct WallCollisionData wcd = { 0 };
+    resolve_and_return_wall_collisions_data(pos, 60.0f, 50.0f, &wcd);
 
     struct Surface *surf = NULL;
     f32 floorHeight = find_floor(pos[0], pos[1], pos[2], &surf);
@@ -672,6 +684,7 @@ void general_star_dance_handler(struct MarioState *m, s32 isInWater) {
                     struct MarioState* marioState = &gMarioStates[i];
                     if (!is_player_active(marioState)) { continue; }
                     if (marioState->marioObj == NULL) { continue; }
+                    if (marioState->playerIndex != m->playerIndex) { continue; }
                     struct Object* celebStar = spawn_object(marioState->marioObj, MODEL_STAR, bhvCelebrationStar);
                     if (m != marioState && celebStar != NULL) {
                         celebStar->header.gfx.node.flags |= GRAPH_RENDER_INVISIBLE;
@@ -1277,8 +1290,8 @@ s32 act_exit_land_save_dialog(struct MarioState *m) {
                 if (!(m->flags & MARIO_CAP_ON_HEAD)) {
                     m->actionState = 2; // star exit without cap
                 }
-                if (gLastCompletedCourseNum == COURSE_BITDW
-                    || gLastCompletedCourseNum == COURSE_BITFS) {
+                if ((gLastCompletedCourseNum == COURSE_BITDW || gLastCompletedCourseNum == COURSE_BITFS)
+                    && gLastCollectedStarOrKey == 1) {
                     m->actionState = 1; // key exit
                 }
             }
@@ -1350,7 +1363,6 @@ s32 act_death_exit(struct MarioState *m) {
         play_character_sound(m, CHAR_SOUND_OOOF2);
 #endif
         queue_rumble_data_mario(m, 5, 80);
-        m->numLives--;
         // restore 7.75 units of health
         m->healCounter = 31;
     }
@@ -1366,7 +1378,6 @@ s32 act_unused_death_exit(struct MarioState *m) {
 #else
         play_character_sound(m, CHAR_SOUND_OOOF2);
 #endif
-        m->numLives--;
         // restore 7.75 units of health
         m->healCounter = 31;
     }
@@ -1383,7 +1394,6 @@ s32 act_falling_death_exit(struct MarioState *m) {
         play_character_sound(m, CHAR_SOUND_OOOF2);
 #endif
         queue_rumble_data_mario(m, 5, 80);
-        m->numLives--;
         // restore 7.75 units of health
         m->healCounter = 31;
     }
@@ -1428,7 +1438,6 @@ s32 act_special_death_exit(struct MarioState *m) {
 
     if (launch_mario_until_land(m, ACT_HARD_BACKWARD_GROUND_KB, MARIO_ANIM_BACKWARD_AIR_KB, -24.0f)) {
         queue_rumble_data_mario(m, 5, 80);
-        m->numLives--;
         m->healCounter = 31;
     }
     // show Mario
@@ -2964,7 +2973,7 @@ s32 mario_execute_cutscene_action(struct MarioState *m) {
         return TRUE;
     }
 
-    if (!smlua_call_action_hook(m, &cancel)) {
+    if (!smlua_call_action_hook(ACTION_HOOK_EVERY_FRAME, m, &cancel)) {
         /* clang-format off */
         switch (m->action) {
             case ACT_DISAPPEARED:                cancel = act_disappeared(m);                break;

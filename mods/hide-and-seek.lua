@@ -14,8 +14,9 @@ ROUND_STATE_UNKNOWN_END = 4
 gGlobalSyncTable.touchTag = true
 gGlobalSyncTable.campingTimer = false -- enable/disable camping timer
 gGlobalSyncTable.hiderCaps = true
-gGlobalSyncTable.banKoopaShell = true
 gGlobalSyncTable.seekerCaps = false
+gGlobalSyncTable.banKoopaShell = true
+gGlobalSyncTable.banRR = true
 gGlobalSyncTable.roundState   = ROUND_STATE_WAIT -- current round state
 gGlobalSyncTable.displayTimer = 0 -- the displayed timer
 sRoundTimer        = 0            -- the server's round timer
@@ -36,6 +37,10 @@ sDistanceTimeout = 10 * 30 -- ten seconds
 
 -- flashing 'keep moving' index
 sFlashingIndex = 0
+
+-- pu prevention
+local puX = 0
+local puZ = 0
 
 function server_update(m)
     -- increment timer
@@ -197,46 +202,66 @@ function mario_update(m)
         s.seeking = true
     end
 
+    -- remove caps
     if m.playerIndex == 0 or gGlobalSyncTable.roundState ~= ROUND_STATE_ACTIVE then
         if gGlobalSyncTable.seekerCaps and gPlayerSyncTable[m.playerIndex].seeking then
-            m.flags = m.flags & ~MARIO_WING_CAP --Remove wing cap if seeking
-            m.flags = m.flags & ~MARIO_METAL_CAP --Remove metal cap if seeking
+            m.flags = m.flags & ~MARIO_WING_CAP -- remove wing cap if seeking
+            m.flags = m.flags & ~MARIO_METAL_CAP -- remove metal cap if seeking
             stop_cap_music()
             m.capTimer = 0
         elseif gGlobalSyncTable.hiderCaps and not gPlayerSyncTable[m.playerIndex].seeking then
-            m.flags = m.flags & ~MARIO_WING_CAP --Remove wing cap if hiding
-            m.flags = m.flags & ~MARIO_METAL_CAP --Remove metal cap if hiding
+            m.flags = m.flags & ~MARIO_WING_CAP -- remove wing cap if hiding
+            m.flags = m.flags & ~MARIO_METAL_CAP -- remove metal cap if hiding
             stop_cap_music()
             m.capTimer = 0
         end
     end
 
-    if gNetworkPlayers[m.playerIndex].currLevelNum == LEVEL_RR and m.playerIndex == 0 then
-        warp_to_castle(LEVEL_RR)
-    end
+    -- warp players out of banned levels
+    if m.playerIndex == 0 then
+        if gNetworkPlayers[m.playerIndex].currLevelNum == LEVEL_RR and gGlobalSyncTable.banRR then
+            warp_to_castle(LEVEL_RR)
+        end
 
-    if gNetworkPlayers[m.playerIndex].currLevelNum == LEVEL_BOWSER_1 and m.playerIndex == 0 then
-        warp_to_castle(LEVEL_BITDW)
-    end
+        if gNetworkPlayers[m.playerIndex].currLevelNum == LEVEL_BOWSER_1 then
+            warp_to_castle(LEVEL_BITDW)
+        end
 
-    if gNetworkPlayers[m.playerIndex].currLevelNum == LEVEL_BOWSER_2 and m.playerIndex == 0 then
-        warp_to_castle(LEVEL_BITFS)
-    end
+        if gNetworkPlayers[m.playerIndex].currLevelNum == LEVEL_BOWSER_2 then
+            warp_to_castle(LEVEL_BITFS)
+        end
 
-    if gNetworkPlayers[m.playerIndex].currLevelNum == LEVEL_BOWSER_3 and m.playerIndex == 0 then
-        warp_to_castle(LEVEL_BITS)
-    end
+        if gNetworkPlayers[m.playerIndex].currLevelNum == LEVEL_BOWSER_3 then
+            warp_to_castle(LEVEL_BITS)
+        end
 
-    -- this doesn't work properly, it automatically ends the round again
-    --if m.playerIndex == 0 and gPlayerSyncTable[m.playerIndex].seeking and gGlobalSyncTable.displayTimer == 0 and gGlobalSyncTable.roundState == ROUND_STATE_ACTIVE then
-    --    warp_to_level(LEVEL_CASTLE_GROUNDS, 1, 0)
-    --end
+        if gPlayerSyncTable[m.playerIndex].seeking and gGlobalSyncTable.displayTimer == 0 and gGlobalSyncTable.roundState == ROUND_STATE_ACTIVE then
+            warp_to_level(gLevelValues.entryLevel, 1, 0)
+        end
+    end
 
     -- display all seekers as metal
     if s.seeking then
         m.marioBodyState.modelState = MODEL_STATE_METAL
        
         m.health = 0x880
+    end
+    
+    -- pu prevention
+    if m.pos.x >= 0 then
+        puX = math.floor((8192 + m.pos.x) / 65536)
+    else
+        puX = math.ceil((-8192 + m.pos.x) / 65536)
+    end
+
+    if m.pos.z >= 0 then
+        puZ = math.floor((8192 + m.pos.z) / 65536)
+    else
+        puZ = math.ceil((-8192 + m.pos.z) / 65536)
+    end
+
+    if (puX ~= 0) or (puZ ~= 0) then
+        s.seeking = true
     end
 end
 
@@ -445,6 +470,7 @@ function on_hide_and_seek_command(msg)
         gGlobalSyncTable.hideAndSeek = false
         return true
     end
+
     return false
 end
 
@@ -458,6 +484,7 @@ function on_anti_camp_command(msg)
         gGlobalSyncTable.campingTimer = false
         return true
     end
+
     return false
 end
 
@@ -471,19 +498,7 @@ function on_touch_tag_command(msg)
         gGlobalSyncTable.touchTag = false
         return true
     end
-    return false
-end
 
-function on_koopa_shell_command(msg)
-    if msg == 'on' then
-        djui_chat_message_create('Koopa Shell: enabled')
-        gGlobalSyncTable.banKoopaShell = false
-        return true
-    elseif msg == 'off' then
-        djui_chat_message_create('Koopa Shell: disabled')
-        gGlobalSyncTable.banKoopaShell = true
-        return true
-    end
     return false
 end
 
@@ -497,6 +512,7 @@ function on_hider_cap_command(msg)
         gGlobalSyncTable.hiderCaps = true
         return true
     end
+
     return false
 end
 
@@ -510,16 +526,52 @@ function on_seeker_cap_command(msg)
         gGlobalSyncTable.seekerCaps = true
         return true
     end
+
+    return false
+end
+
+function on_koopa_shell_command(msg)
+    if msg == 'on' then
+        djui_chat_message_create('Koopa Shell: enabled')
+        gGlobalSyncTable.banKoopaShell = false
+        return true
+    elseif msg == 'off' then
+        djui_chat_message_create('Koopa Shell: disabled')
+        gGlobalSyncTable.banKoopaShell = true
+        return true
+    end
+
+    return false
+end
+
+function on_ban_rr_command(msg)
+    if msg == 'on' then
+        djui_chat_message_create('Ban RR: enabled')
+        gGlobalSyncTable.banRR = true
+        return true
+    elseif msg == 'off' then
+        djui_chat_message_create('Ban RR: disabled')
+        gGlobalSyncTable.banRR = false
+        return true
+    end
+
     return false
 end
 
 function on_pause_exit(exitToCastle)
     local s = gPlayerSyncTable[0]
     if not s.seeking then
-        s.seeking = true
-        network_player_set_description(gNetworkPlayers[0], "seeker", 255, 64, 64, 255)
+        for i=1,(MAX_PLAYERS-1) do
+            if gNetworkPlayers[i].connected and gNetworkPlayers[i].currLevelNum == gNetworkPlayers[0].currLevelNum and gNetworkPlayers[i].currActNum == gNetworkPlayers[0].currActNum and gNetworkPlayers[i].currAreaIndex == gNetworkPlayers[0].currAreaIndex and gPlayerSyncTable[i].seeking then
+                local m = gMarioStates[0]
+                local a = gMarioStates[i]
+
+                if dist_between_objects(m.marioObj, a.marioObj) <= 4000 then
+                    return false
+                end
+            end
+        end
     end
-    return true
 end
 
 function allow_pvp_attack(m1, m2)
@@ -565,8 +617,6 @@ function on_seeking_changed(tag, oldVal, newVal)
             sLastSeekerIndex = m.playerIndex
         end
         sRoundTimer = 32
-
-
     end
 
     if newVal then
@@ -598,10 +648,10 @@ function on_interact(m, obj, intee)
 end
 
 function check_touch_tag_allowed(i)
-    if gMarioStates[i].action ~= ACT_TELEPORT_FADE_IN and gMarioStates[i].action ~= ACT_TELEPORT_FADE_OUT and gMarioStates[i].action ~= ACT_PULLING_DOOR and gMarioStates[i].action ~= ACT_PUSHING_DOOR and gMarioStates[i].action ~= ACT_WARP_DOOR_SPAWN and gMarioStates[i].action ~= ACT_ENTERING_STAR_DOOR and gMarioStates[i].action ~= ACT_STAR_DANCE_EXIT and gMarioStates[i].action ~= ACT_STAR_DANCE_NO_EXIT and gMarioStates[i].action ~= ACT_STAR_DANCE_WATER and gMarioStates[i].action ~= ACT_PANTING then
+    if gMarioStates[i].action ~= ACT_TELEPORT_FADE_IN and gMarioStates[i].action ~= ACT_TELEPORT_FADE_OUT and gMarioStates[i].action ~= ACT_PULLING_DOOR and gMarioStates[i].action ~= ACT_PUSHING_DOOR and gMarioStates[i].action ~= ACT_WARP_DOOR_SPAWN and gMarioStates[i].action ~= ACT_ENTERING_STAR_DOOR and gMarioStates[i].action ~= ACT_STAR_DANCE_EXIT and gMarioStates[i].action ~= ACT_STAR_DANCE_NO_EXIT and gMarioStates[i].action ~= ACT_STAR_DANCE_WATER and gMarioStates[i].action ~= ACT_PANTING and gMarioStates[i].action ~= ACT_UNINITIALIZED and gMarioStates[i].action ~= ACT_WARP_DOOR_SPAWN then
         return true
     end
-    
+
     return false
 end
 
@@ -633,6 +683,7 @@ if network_is_server() then
   hook_chat_command('seekers-caps', "[on|off] turn caps for seekers on or off", on_seeker_cap_command)
   hook_chat_command('anti-camp', "[on|off] turn the anti-camp timer on or off", on_anti_camp_command)
   hook_chat_command('koopa-shell', "[on|off] Turn the koopa shell on or off", on_koopa_shell_command)
+  hook_chat_command('ban-rr', "[on|off] Turn Banning RR on or off", on_ban_rr_command)
 end
 
 -- call functions when certain sync table values change

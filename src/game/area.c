@@ -24,6 +24,7 @@
 #include "gfx_dimensions.h"
 #include "game/ingame_menu.h"
 #include "pc/network/network.h"
+#include "pc/lua/smlua_hooks.h"
 
 struct SpawnInfo gPlayerSpawnInfos[MAX_PLAYERS];
 struct GraphNode *D_8033A160[MAX_LOADED_GRAPH_NODES];
@@ -272,7 +273,7 @@ void unload_area(void) {
         network_send_level_area_inform();
     }
 
-    network_clear_sync_objects();
+    sync_objects_clear();
     if (gCurrentArea != NULL) {
         unload_objects_from_area(0, gCurrentArea->index);
         geo_call_global_function_nodes(&gCurrentArea->unk04->node, GEO_CONTEXT_AREA_UNLOAD);
@@ -341,6 +342,10 @@ void area_update_objects(void) {
  * transition type, time in frames, and the RGB color that will fill the screen.
  */
 void play_transition(s16 transType, s16 time, u8 red, u8 green, u8 blue) {
+    bool returnValue = true;
+    smlua_call_event_hooks_int_params_ret_bool(HOOK_ON_SCREEN_TRANSITION, transType, &returnValue);
+    if (!returnValue) { return; }
+
     gWarpTransition.isActive = TRUE;
     gWarpTransition.type = transType;
     gWarpTransition.time = time;

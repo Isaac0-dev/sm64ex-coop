@@ -3,6 +3,7 @@ extern "C" {
 #include "game/segment2.h"
 #include "game/save_file.h"
 #include "levels/scripts.h"
+#include "pc/lua/utils/smlua_level_utils.h"
 }
 
 //
@@ -198,7 +199,7 @@ static void DynOS_Level_Init() {
         for (s32 i = COURSE_MIN; i <= COURSE_MAX; ++i) {
             if (i == COURSE_CAKE_END) continue;
             for (s32 j = 1; j != LEVEL_COUNT; ++j) {
-                if (gLevelToCourseNumTable[j - 1] == i) {
+                if (get_level_course_num(j - 1) == i) {
                     sDynosLevelList.Add(j);
                 }
             }
@@ -249,6 +250,12 @@ void DynOS_Level_Unoverride() {
 }
 
 const void *DynOS_Level_GetScript(s32 aLevel) {
+    if (aLevel >= CUSTOM_LEVEL_NUM_START) {
+        struct CustomLevelInfo* info = smlua_level_util_get_info(aLevel);
+        if (!info || !info->script) { return NULL; }
+        return info->script;
+    }
+
     DynOS_Level_Init();
     return sDynosLevelScripts[aLevel];
 }
@@ -377,6 +384,7 @@ const u8 *DynOS_Level_GetAreaName(s32 aLevel, s32 aArea, bool aDecaps) {
         { "MAIN AREA", "NOT AVAILABLE", "NOT AVAILABLE", "NOT AVAILABLE" }, /* Castle grounds */
         { "FIRST FLOOR", "SECOND FLOOR", "BASEMENT", "NOT AVAILABLE" }, /* Castle inside */
         { "MAIN AREA", "NOT AVAILABLE", "NOT AVAILABLE", "NOT AVAILABLE" }, /* Castle courtyard */
+        { "ENDING", "NOT AVAILABLE", "NOT AVAILABLE", "NOT AVAILABLE" }, /* Ending */
     };
     static u8 sBuffer[256];
     memset(sBuffer, 0xFF, 256);
@@ -413,6 +421,7 @@ const u8 *DynOS_Level_GetAreaName(s32 aLevel, s32 aArea, bool aDecaps) {
         case LEVEL_CASTLE_GROUNDS: SetConvertedTextToBuffer(sBuffer, sAreaNamesPerLevel[28][MIN(MAX(aArea - 1, 0), 3)]); break;
         case LEVEL_CASTLE: SetConvertedTextToBuffer(sBuffer, sAreaNamesPerLevel[29][MIN(MAX(aArea - 1, 0), 3)]); break;
         case LEVEL_CASTLE_COURTYARD: SetConvertedTextToBuffer(sBuffer, sAreaNamesPerLevel[30][MIN(MAX(aArea - 1, 0), 3)]); break;
+        case LEVEL_ENDING: SetConvertedTextToBuffer(sBuffer, sAreaNamesPerLevel[31][MIN(MAX(aArea - 1, 0), 3)]); break;
         default: SetConvertedTextToBuffer(sBuffer, sAreaNamesPerLevel[0][MIN(MAX(aArea - 1, 0), 3)]); break;
     }
 
@@ -842,6 +851,21 @@ static void DynOS_Level_ParseScript(const void *aScript, s32 (*aPreprocessFuncti
 //
 
 s16 *DynOS_Level_GetWarp(s32 aLevel, s32 aArea, u8 aWarpId) {
+    if (aLevel >= CUSTOM_LEVEL_NUM_START) {
+        struct CustomLevelInfo* info = smlua_level_util_get_info(aLevel);
+        if (!info || !info->script) { return NULL; }
+        sDynosCurrentLevelNum = 1;
+        DynOS_Level_ParseScript(info->script, DynOS_Level_PreprocessScript);
+        for (const auto &_Warp : sDynosLevelWarps[1]) {
+            if (_Warp.mArea == aArea) {
+                if (_Warp.mId == aWarpId) {
+                    return (s16 *) &_Warp;
+                }
+            }
+        }
+        return NULL;
+    }
+
     DynOS_Level_Init();
     for (const auto &_Warp : sDynosLevelWarps[aLevel]) {
         if (_Warp.mArea == aArea) {

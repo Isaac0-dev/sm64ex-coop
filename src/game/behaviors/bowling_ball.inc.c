@@ -12,7 +12,7 @@ static struct ObjectHitbox sBowlingBallHitbox = {
     /* hurtboxHeight:     */ 0,
 };
 
-static Trajectory sThiHugeMetalBallTraj[] = {
+Trajectory sThiHugeMetalBallTraj[] = {
     TRAJECTORY_POS(0, /*pos*/ -4786,   101, -2166),
     TRAJECTORY_POS(1, /*pos*/ -5000,    81, -2753),
     TRAJECTORY_POS(2, /*pos*/ -5040,    33, -3846),
@@ -26,7 +26,7 @@ static Trajectory sThiHugeMetalBallTraj[] = {
     TRAJECTORY_END(),
 };
 
-static Trajectory sThiTinyMetalBallTraj[] = {
+Trajectory sThiTinyMetalBallTraj[] = {
     TRAJECTORY_POS(0, /*pos*/ -1476,    29,  -680),
     TRAJECTORY_POS(1, /*pos*/ -1492,    14, -1072),
     TRAJECTORY_POS(2, /*pos*/ -1500,     3, -1331),
@@ -67,11 +67,11 @@ void bowling_ball_set_waypoints(void) {
             break;
 
         case BBALL_BP_STYPE_THI_LARGE:
-            o->oPathedStartWaypoint = (struct Waypoint *) sThiHugeMetalBallTraj;
+            o->oPathedStartWaypoint = segmented_to_virtual(gBehaviorValues.trajectories.BowlingBallThiLargeTrajectory);
             break;
 
         case BBALL_BP_STYPE_THI_SMALL:
-            o->oPathedStartWaypoint = (struct Waypoint *) sThiTinyMetalBallTraj;
+            o->oPathedStartWaypoint = segmented_to_virtual(gBehaviorValues.trajectories.BowlingBallThiSmallTrajectory);
             break;
     }
 }
@@ -117,23 +117,23 @@ void bhv_bowling_ball_initializeLoop(void) {
 
     switch (o->oBehParams2ndByte) {
         case BBALL_BP_STYPE_BOB_UPPER:
-            o->oForwardVel = 20.0f;
+            o->oForwardVel = gBehaviorValues.BowlingBallBobSpeed;
             break;
 
         case BBALL_BP_STYPE_TTM:
-            o->oForwardVel = 10.0f;
+            o->oForwardVel = gBehaviorValues.BowlingBallTtmSpeed;
             break;
 
         case BBALL_BP_STYPE_BOB_LOWER:
-            o->oForwardVel = 20.0f;
+            o->oForwardVel = gBehaviorValues.BowlingBallBob2Speed;
             break;
 
         case BBALL_BP_STYPE_THI_LARGE:
-            o->oForwardVel = 25.0f;
+            o->oForwardVel = gBehaviorValues.BowlingBallThiLargeSpeed;
             break;
 
         case BBALL_BP_STYPE_THI_SMALL:
-            o->oForwardVel = 10.0f;
+            o->oForwardVel = gBehaviorValues.BowlingBallThiSmallSpeed;
             cur_obj_scale(0.3f);
             o->oGraphYOffset = 39.0f;
             break;
@@ -178,8 +178,8 @@ void bhv_generic_bowling_ball_spawner_init(void) {
 }
 
 void bhv_generic_bowling_ball_spawner_loop(void) {
-    if (!network_sync_object_initialized(o)) {
-        network_init_object(o, SYNC_DISTANCE_ONLY_EVENTS);
+    if (!sync_object_is_initialized(o->oSyncID)) {
+        sync_object_init(o, SYNC_DISTANCE_ONLY_EVENTS);
     }
 
     struct Object *bowlingBall;
@@ -197,7 +197,7 @@ void bhv_generic_bowling_ball_spawner_loop(void) {
     {
         if (is_point_within_radius_of_mario(o->oPosX, o->oPosY, o->oPosZ, o->oBBallSpawnerMaxSpawnDist)) {
             if ((s32)(random_float() * o->oBBallSpawnerSpawnOdds) == 0) {
-                if (!network_owns_object(o)) {
+                if (!sync_object_is_owned_locally(o->oSyncID)) {
                     return;
                 }
                 // this branch only runs for one player at a time
@@ -216,8 +216,8 @@ void bhv_generic_bowling_ball_spawner_loop(void) {
 }
 
 void bhv_thi_bowling_ball_spawner_loop(void) {
-    if (!network_sync_object_initialized(o)) {
-        network_init_object(o, SYNC_DISTANCE_ONLY_EVENTS);
+    if (!sync_object_is_initialized(o->oSyncID)) {
+        sync_object_init(o, SYNC_DISTANCE_ONLY_EVENTS);
     }
 
     struct Object *bowlingBall;
@@ -232,7 +232,7 @@ void bhv_thi_bowling_ball_spawner_loop(void) {
 
     if ((o->oTimer % 64) == 0) {
         if (is_point_within_radius_of_mario(o->oPosX, o->oPosY, o->oPosZ, 12000)) {
-            if (network_owns_object(o) && (s32)(random_float() * 1.5) == 0) {
+            if (sync_object_is_owned_locally(o->oSyncID) && (s32)(random_float() * 1.5) == 0) {
                 // this branch only runs for one player at a time
                 bowlingBall = spawn_object(o, MODEL_BOWLING_BALL, bhvBowlingBall);
                 if (bowlingBall != NULL) {
@@ -253,7 +253,7 @@ void bhv_bob_pit_bowling_ball_init(void) {
     o->oFriction = 1.0f;
     o->oBuoyancy = 2.0f;
 
-    struct SyncObject* so = network_init_object(o, 5000.0f);
+    struct SyncObject* so = sync_object_init(o, 5000.0f);
     if (so) {
         so->maxUpdateRate = 5.0f;
     }

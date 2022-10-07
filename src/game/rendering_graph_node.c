@@ -266,14 +266,16 @@ void patch_mtx_interpolated(f32 delta) {
     struct GraphNodeObject* savedObj = gCurGraphNodeObject;
     for (s32 i = 0; i < sShadowInterpCount; i++) {
         struct ShadowInterp* interp = &sShadowInterp[i];
+        if (!interp->gfx) { continue; }
         gShadowInterpCurrent = interp;
         Vec3f posInterp;
         delta_interpolate_vec3f(posInterp, interp->shadowPosPrev, interp->shadowPos, delta);
         gCurGraphNodeObject = interp->obj;
         extern u8 gInterpolatingSurfaces;
         gInterpolatingSurfaces = true;
-        create_shadow_below_xyz(posInterp[0], posInterp[1], posInterp[2], interp->shadowScale, interp->node->shadowSolidity, interp->node->shadowType);
+        gShadowInterpCurrent->gfx = create_shadow_below_xyz(posInterp[0], posInterp[1], posInterp[2], interp->shadowScale, interp->node->shadowSolidity, interp->node->shadowType);
         gInterpolatingSurfaces = false;
+        gShadowInterpCurrent = NULL;
     }
     gCurGraphNodeObject = savedObj;
 
@@ -1117,6 +1119,8 @@ static void geo_process_shadow(struct GraphNodeShadow *node) {
 static s32 obj_is_in_view(struct GraphNodeObject *node, Mat4 matrix) {
     if (node->node.flags & GRAPH_RENDER_INVISIBLE) {
         return FALSE;
+    } else if (node->skipInViewCheck) {
+        return TRUE;
     }
 
     // ! @bug The aspect ratio is not accounted for. When the fov value is 45,

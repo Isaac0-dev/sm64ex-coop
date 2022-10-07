@@ -5,6 +5,7 @@
 #include "object_constants.h"
 #include "behavior_table.h"
 #include "src/game/hardcoded.h"
+#include "src/game/scroll_targets.h"
 #ifdef DISCORD_SDK
 #include "discord/discord.h"
 #endif
@@ -18,6 +19,12 @@
 #include "pc/mods/mods.h"
 #include "pc/crash_handler.h"
 #include "pc/debuglog.h"
+#include "game/camera.h"
+
+// fix warnings when including rendering_graph_node
+#undef near
+#undef far
+#include "src/game/rendering_graph_node.h"
 
 // Mario 64 specific externs
 extern s16 sCurrPlayMode;
@@ -40,7 +47,7 @@ u32 gNetworkAreaTimerClock = 0;
 u32 gNetworkAreaTimer = 0;
 void* gNetworkServerAddr = NULL;
 bool gNetworkSentJoin = false;
-u8 gNetworkRequestLocationTimer = 0;
+u16 gNetworkRequestLocationTimer = 0;
 
 u8 gDebugPacketIdBuffer[256] = { 0xFF };
 u8 gDebugPacketSentBuffer[256] = { 0 };
@@ -96,7 +103,7 @@ bool network_init(enum NetworkType inNetworkType) {
 #else
     gServerSettings.headlessServer = 0;
 #endif
-    Cheats.EnableCheats = gServerSettings.enableCheats;
+    Cheats.enabled = gServerSettings.enableCheats;
 
     // initialize the network system
     gNetworkSentJoin = false;
@@ -120,7 +127,9 @@ bool network_init(enum NetworkType inNetworkType) {
         mods_activate(&gLocalMods);
         smlua_init();
 
-        network_player_connected(NPT_LOCAL, 0, configPlayerModel, configPlayerPalette, configPlayerName);
+        dynos_behavior_hook_all_custom_behaviors();
+
+        network_player_connected(NPT_LOCAL, 0, configPlayerModel, &configPlayerPalette, configPlayerName);
         extern u8* gOverrideEeprom;
         gOverrideEeprom = NULL;
 
@@ -425,17 +434,17 @@ void network_update(void) {
     }
 
     // update level/area request timers
-    struct NetworkPlayer* np = gNetworkPlayerLocal;
+    /*struct NetworkPlayer* np = gNetworkPlayerLocal;
     if (np != NULL && !np->currLevelSyncValid) {
         gNetworkRequestLocationTimer++;
-        if (gNetworkRequestLocationTimer > 90) {
+        if (gNetworkRequestLocationTimer > 30 * 10) {
             // find a NetworkPlayer around that location
             struct NetworkPlayer *npLevelAreaMatch = get_network_player_from_area(np->currCourseNum, np->currActNum, np->currLevelNum, np->currAreaIndex);
             struct NetworkPlayer *npLevelMatch     = get_network_player_from_level(np->currCourseNum, np->currActNum, np->currLevelNum);
             struct NetworkPlayer *npAny = (npLevelAreaMatch == NULL) ? npLevelMatch : npLevelAreaMatch;
 
             bool inCredits = (np->currActNum == 99);
-            if (npAny == NULL || inCredits) {
+            if (gNetworkType == NT_SERVER && (npAny == NULL || inCredits)) {
                 // no NetworkPlayer in the level
                 network_send_sync_valid(np, np->currCourseNum, np->currActNum, np->currLevelNum, np->currAreaIndex);
                 return;
@@ -448,7 +457,7 @@ void network_update(void) {
                 network_send_level_request(np, npAny);
             }
         }
-    }
+    }*/
 
 }
 
@@ -457,7 +466,7 @@ void network_register_mod(char* modName) {
     string_linked_list_append(&gRegisteredMods, modName);
 }
 
-void network_shutdown(bool sendLeaving, bool exiting) {
+void network_shutdown(bool sendLeaving, bool exiting, bool popup) {
     if (gDjuiChatBox != NULL) {
         djui_base_destroy(&gDjuiChatBox->base);
         gDjuiChatBox = NULL;
@@ -470,7 +479,7 @@ void network_shutdown(bool sendLeaving, bool exiting) {
     if (gNetworkSystem == NULL) { LOG_ERROR("no network system attached"); return; }
 
     if (gNetworkPlayerLocal != NULL && sendLeaving) { network_send_leaving(gNetworkPlayerLocal->globalIndex); }
-    network_player_shutdown();
+    network_player_shutdown(popup);
     gNetworkSystem->shutdown();
 
     if (gNetworkServerAddr != NULL) {
@@ -478,8 +487,9 @@ void network_shutdown(bool sendLeaving, bool exiting) {
         gNetworkServerAddr = NULL;
     }
     gNetworkPlayerServer = NULL;
- 
+
     gNetworkType = NT_NONE;
+
 
 #ifdef DISCORD_SDK
     network_set_system(NS_DISCORD);
@@ -493,6 +503,9 @@ void network_shutdown(bool sendLeaving, bool exiting) {
     extern u8 gOverrideFreezeCamera;
     gOverrideFreezeCamera = false;
     gDjuiHudLockMouse = false;
+    gOverrideNear = 0;
+    gOverrideFar = 0;
+    gOverrideFOV = 0;
     dynos_mod_shutdown();
     mods_clear(&gActiveMods);
     mods_clear(&gRemoteMods);
@@ -500,6 +513,8 @@ void network_shutdown(bool sendLeaving, bool exiting) {
     extern s16 gChangeLevel;
     gChangeLevel = LEVEL_CASTLE_GROUNDS;
     network_player_init();
+    camera_set_use_course_specific_settings(true);
+    free_vtx_scroll_targets();
 
     struct Controller* cnt = gMarioStates[0].controller;
     cnt->rawStickX = 0;
@@ -514,6 +529,8 @@ void network_shutdown(bool sendLeaving, bool exiting) {
 
     extern void save_file_load_all(UNUSED u8 reload);
     save_file_load_all(TRUE);
+    extern void save_file_set_using_backup_slot(bool usingBackupSlot);
+    save_file_set_using_backup_slot(false);
 
     extern s16 gMenuMode;
     gMenuMode = -1;

@@ -1,6 +1,7 @@
 #include "dynos.cpp.h"
 extern "C" {
 #include "src/game/moving_texture.h"
+#include "game/hardcoded.h"
 
 void *dynos_swap_cmd(void *cmd) {
     return DynOS_SwapCmd(cmd);
@@ -30,8 +31,26 @@ void dynos_gfx_swap_animations(void *ptr) {
 
 // -- warps -- //
 
+LevelScript* dynos_get_level_script(char* scriptEntryName) {
+    return DynOS_Lvl_GetScript(scriptEntryName);
+}
+
+bool dynos_warp_to_warpnode(s32 aLevel, s32 aArea, s32 aAct, s32 aWarpId) {
+    return DynOS_Warp_ToWarpNode(aLevel, aArea, aAct, aWarpId);
+}
+
 bool dynos_warp_to_level(s32 aLevel, s32 aArea, s32 aAct) {
     return DynOS_Warp_ToLevel(aLevel, aArea, aAct);
+}
+
+bool dynos_warp_to_start_level(void) {
+
+    // change the level to the start level
+    extern s16 gChangeLevel;
+    gChangeLevel = gLevelValues.entryLevel;
+
+    // always return true since it will always suceed
+    return true;
 }
 
 bool dynos_warp_restart_level(void) {
@@ -160,9 +179,31 @@ void dynos_level_load_background(void *ptr) {
     DynOS_Lvl_LoadBackground(ptr);
 }
 
+// -- Behaviors -- //
+
+void dynos_add_behavior(s32 modIndex, const char *filePath, const char *behaviorName) {
+    DynOS_Bhv_Activate(modIndex, filePath, behaviorName);
+}
+
+s32 dynos_behavior_get_active_mod_index(BehaviorScript *bhvScript) {
+    return DynOS_Bhv_GetActiveModIndex(bhvScript);
+}
+
+const char *dynos_behavior_get_token(BehaviorScript *bhvScript, u32 index) {
+    return DynOS_Bhv_GetToken(bhvScript, index);
+}
+
+void dynos_behavior_hook_all_custom_behaviors(void) {
+    DynOS_Bhv_HookAllCustomBehaviors();
+}
+
 // -- other -- //
 void dynos_mod_shutdown(void) {
     DynOS_Mod_Shutdown();
+}
+
+void dynos_add_scroll_target(u32 index, const char *name, u32 offset, u32 size) {
+    DynOS_Add_Scroll_Target(index, name, offset, size);
 }
 
 }

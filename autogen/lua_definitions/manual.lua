@@ -37,6 +37,12 @@ gLevelValues = {}
 --- @type BehaviorValues
 gBehaviorValues = {}
 
+--- @type BehaviorValues
+gBehaviorValues = {}
+
+--- @type PlayerPalette[]
+gPalettePresets = {}
+
 -----------
 -- hooks --
 -----------
@@ -65,9 +71,9 @@ function hook_event(hookEventType, func)
 end
 
 --- @param actionId integer
---- @param func fun(m:MarioState):integer
+--- @param funcOrFuncTable fun(m:MarioState):integer | table(fun(m:MarioState):integer)
 --- @param interactionType InteractionFlag
-function hook_mario_action(actionId, func, interactionType)
+function hook_mario_action(actionId, funcOrFuncTable, interactionType)
     -- ...
 end
 

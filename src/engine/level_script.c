@@ -27,6 +27,7 @@
 #include "level_table.h"
 #include "src/pc/lua/utils/smlua_model_utils.h"
 #include "src/pc/lua/smlua.h"
+#include "src/pc/djui/djui.h"
 
 #define CMD_GET(type, offset) (*(type *) (CMD_PROCESS_OFFSET(offset) + (u8 *) sCurrentCmd))
 
@@ -763,7 +764,7 @@ static void level_cmd_nop(void) {
 }
 
 static void level_cmd_show_dialog(void) {
-    if (sCurrAreaIndex != -1) {
+    if (sCurrAreaIndex != -1 && !gDjuiInMainMenu) {
         if (CMD_GET(u8, 2) < 2) {
             gAreas[sCurrAreaIndex].dialog[CMD_GET(u8, 2)] = CMD_GET(u8, 3);
         }
@@ -887,13 +888,11 @@ static void level_cmd_place_object_ext(void) {
     }
 
     gSmLuaConvertSuccess = true;
-    gSmLuaSuppressErrors = true;
-    enum BehaviorId behId = smlua_get_mod_variable(modIndex, behStr);
-    gSmLuaSuppressErrors = false;
+    enum BehaviorId behId = smlua_get_integer_mod_variable(modIndex, behStr);
 
     if (!gSmLuaConvertSuccess) {
         gSmLuaConvertSuccess = true;
-        behId = smlua_get_any_mod_variable(behStr);
+        behId = smlua_get_any_integer_mod_variable(behStr);
     }
 
     if (!gSmLuaConvertSuccess) {
@@ -945,12 +944,10 @@ static void level_cmd_place_object_ext2(void) {
     }
 
     gSmLuaConvertSuccess = true;
-    gSmLuaSuppressErrors = true;
-    enum ModelExtendedId modelId = smlua_get_mod_variable(modIndex, modelStr);
-    gSmLuaSuppressErrors = false;
+    enum ModelExtendedId modelId = smlua_get_integer_mod_variable(modIndex, modelStr);
     if (!gSmLuaConvertSuccess) {
         gSmLuaConvertSuccess = true;
-        modelId = smlua_get_any_mod_variable(modelStr);
+        modelId = smlua_get_any_integer_mod_variable(modelStr);
     }
     if (!gSmLuaConvertSuccess) {
         LOG_LUA("Failed to place custom object, could not find model '%s'", modelStr);
@@ -959,12 +956,10 @@ static void level_cmd_place_object_ext2(void) {
     }
 
     gSmLuaConvertSuccess = true;
-    gSmLuaSuppressErrors = true;
-    enum BehaviorId behId = smlua_get_mod_variable(modIndex, behStr);
-    gSmLuaSuppressErrors = false;
+    enum BehaviorId behId = smlua_get_integer_mod_variable(modIndex, behStr);
     if (!gSmLuaConvertSuccess) {
         gSmLuaConvertSuccess = true;
-        behId = smlua_get_any_mod_variable(behStr);
+        behId = smlua_get_any_integer_mod_variable(behStr);
     }
 
     if (!gSmLuaConvertSuccess) {

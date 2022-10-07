@@ -296,6 +296,25 @@ void bhv_mario_update(void) {
     particleFlags |= gMarioState->particleFlags;
     gCurrentObject->oMarioParticleFlags = particleFlags;
 
+    // This code is meant to preserve old Lua mods' ability to set overridePaletteIndex and paletteIndex and still work
+    // as they expected. USE_REAL_PALETTE_VAR is meant to help support cases where mods will do:
+    //     np.overridePaletteIndex = np.paletteIndex
+    // to undo the palette override and have it still go back to the new REAL palette stored in `palette`.
+    {
+        struct NetworkPlayer *np = &gNetworkPlayers[gMarioState->playerIndex];
+
+        if (np->overridePaletteIndex != np->overridePaletteIndexLp) {
+            np->overridePaletteIndexLp = np->overridePaletteIndex;
+
+            if (np->overridePaletteIndex == USE_REAL_PALETTE_VAR) {
+                np->overridePalette = np->palette;
+            }
+            else {
+                np->overridePalette = gPalettePresets[np->overridePaletteIndex];
+            }
+        }
+    }
+
     // Mario code updates MarioState's versions of position etc, so we need
     // to sync it with the Mario object
     copy_mario_state_to_object(gMarioState);
@@ -532,7 +551,7 @@ void spawn_objects_from_info(UNUSED s32 unused, struct SpawnInfo *spawnInfo) {
                 // as it is the most frequently used by objects.
                 object->oBehParams2ndByte = ((spawnInfo->behaviorArg) >> 16) & 0xFF;
 
-                object->behavior = script;
+                object->behavior = smlua_override_behavior(script);
                 object->unused1 = 0;
 
                 // Record death/collection in the SpawnInfo
@@ -540,7 +559,7 @@ void spawn_objects_from_info(UNUSED s32 unused, struct SpawnInfo *spawnInfo) {
                 object->respawnInfo = &spawnInfo->behaviorArg;
 
                 // found a player
-                if (spawnInfo->behaviorArg & ((u32)1 << 31) && object->behavior == bhvMario) {
+                if (spawnInfo->behaviorArg & ((u32)1 << 31) && object->behavior == smlua_override_behavior(bhvMario)) {
                     u16 playerIndex = (spawnInfo->behaviorArg & ~(1 << 31));
                     object->oBehParams = playerIndex + 1;
                     gMarioObjects[playerIndex] = object;
@@ -578,7 +597,7 @@ void stub_obj_list_processor_1(void) {
  */
 void clear_objects(void) {
     s32 i;
-    network_clear_sync_objects();
+    sync_objects_clear();
     gTHIWaterDrained = 0;
     gTimeStopState = 0;
     gMarioObject = NULL;

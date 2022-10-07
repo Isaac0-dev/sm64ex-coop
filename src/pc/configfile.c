@@ -18,7 +18,6 @@
 #include "pc/crash_handler.h"
 #include "pc/network/moderator_list.h"
 
-
 #define ARRAY_LEN(arr) (sizeof(arr) / sizeof(arr[0]))
 
 enum ConfigOptionType {
@@ -28,6 +27,7 @@ enum ConfigOptionType {
     CONFIG_TYPE_BIND,
     CONFIG_TYPE_STRING,
     CONFIG_TYPE_U64,
+    CONFIG_TYPE_COLOR,
 };
 
 struct ConfigOption {
@@ -39,6 +39,7 @@ struct ConfigOption {
         float* floatValue;
         char* stringValue;
         u64* u64Value;
+        u8 (*colorValue)[3];
     };
     int maxStringLength;
 };
@@ -132,13 +133,21 @@ unsigned int configStayInLevelAfterStar          = 0;
 unsigned int configNetworkSystem                 = 0;
 char         configPlayerName[MAX_PLAYER_STRING] = "";
 unsigned int configPlayerModel                   = 0;
-unsigned int configPlayerPalette                 = 0;
+unsigned int configMenuLevel                     = 0;
+bool         configMenuSound                     = false;
+bool         configMenuRandom                    = false;
+struct PlayerPalette configPlayerPalette         = {{{ 0x00, 0x00, 0xff }, { 0xff, 0x00, 0x00 }, { 0xff, 0xff, 0xff }, { 0x72, 0x1c, 0x0e }, { 0x73, 0x06, 0x00 }, { 0xfe, 0xc1, 0x79 }}};
 bool         configUncappedFramerate             = true;
 unsigned int configFrameLimit                    = 60;
 unsigned int configDrawDistance                  = 5;
 bool         configDisablePopups                 = 0;
+#ifdef DEVELOPMENT
+bool         configDisableDevPause               = 1;
+#endif
 bool         configDisableDownloadedModels       = 0;
 unsigned int configInterpolationMode             = 1;
+unsigned int configGamepadNumber                 = 0;
+bool         configBackgroundGamepad             = 1;
 
 static const struct ConfigOption options[] = {
     {.name = "fullscreen",           .type = CONFIG_TYPE_BOOL, .boolValue = &configWindow.fullscreen},
@@ -214,12 +223,25 @@ static const struct ConfigOption options[] = {
     {.name = "coop_player_knockback_strength", .type = CONFIG_TYPE_UINT  , .uintValue   = &configPlayerKnockbackStrength},
     {.name = "coop_player_model",              .type = CONFIG_TYPE_UINT  , .uintValue   = &configPlayerModel},
     {.name = "coop_player_name",               .type = CONFIG_TYPE_STRING, .stringValue = (char*)&configPlayerName, .maxStringLength = MAX_PLAYER_STRING},
-    {.name = "coop_player_palette",            .type = CONFIG_TYPE_UINT  , .uintValue   = &configPlayerPalette},
+    {.name = "coop_menu_level",                .type = CONFIG_TYPE_UINT  , .uintValue   = &configMenuLevel},
+    {.name = "coop_menu_sound",                .type = CONFIG_TYPE_BOOL  , .boolValue   = &configMenuSound},
+    {.name = "coop_menu_random",               .type = CONFIG_TYPE_BOOL  , .boolValue   = &configMenuRandom},
+    {.name = "coop_player_palette_pants",      .type = CONFIG_TYPE_COLOR , .colorValue  = &configPlayerPalette.parts[PANTS]},
+    {.name = "coop_player_palette_shirt",      .type = CONFIG_TYPE_COLOR , .colorValue  = &configPlayerPalette.parts[SHIRT]},
+    {.name = "coop_player_palette_gloves",     .type = CONFIG_TYPE_COLOR , .colorValue  = &configPlayerPalette.parts[GLOVES]},
+    {.name = "coop_player_palette_shoes",      .type = CONFIG_TYPE_COLOR , .colorValue  = &configPlayerPalette.parts[SHOES]},
+    {.name = "coop_player_palette_hair",       .type = CONFIG_TYPE_COLOR , .colorValue  = &configPlayerPalette.parts[HAIR]},
+    {.name = "coop_player_palette_skin",       .type = CONFIG_TYPE_COLOR , .colorValue  = &configPlayerPalette.parts[SKIN]},
     {.name = "coop_stay_in_level_after_star",  .type = CONFIG_TYPE_UINT  , .uintValue   = &configStayInLevelAfterStar},
     {.name = "share_lives",                    .type = CONFIG_TYPE_BOOL  , .boolValue   = &configShareLives},
     {.name = "disable_popups",                 .type = CONFIG_TYPE_BOOL  , .boolValue   = &configDisablePopups},
+#ifdef DEVELOPMENT
+    {.name = "disable_devpause",               .type = CONFIG_TYPE_BOOL  , .boolValue   = &configDisableDevPause},
+#endif
     {.name = "disable_downloaded_models",      .type = CONFIG_TYPE_BOOL  , .boolValue   = &configDisableDownloadedModels},
-    {.name = "interpolation_mode",             .type = CONFIG_TYPE_UINT  , .uintValue   = &configInterpolationMode}
+    {.name = "interpolation_mode",             .type = CONFIG_TYPE_UINT  , .uintValue   = &configInterpolationMode},
+    {.name = "gamepad_number",                 .type = CONFIG_TYPE_UINT  , .uintValue   = &configGamepadNumber},
+    {.name = "background_gamepad",             .type = CONFIG_TYPE_UINT  , .boolValue   = &configBackgroundGamepad}
 };
 
 // FunctionConfigOption functions
@@ -395,6 +417,7 @@ const char *configfile_name(void) {
 void configfile_load(const char *filename) {
     fs_file_t *file;
     char *line;
+    unsigned int temp;
 
     printf("Loading configuration from '%s'\n", filename);
 
@@ -470,6 +493,12 @@ void configfile_load(const char *filename) {
                         case CONFIG_TYPE_U64:
                             sscanf(tokens[1], "%llu", option->u64Value);
                             break;
+                        case CONFIG_TYPE_COLOR:
+                            for (int i = 0; i < 3 && i < numTokens - 1; ++i) {
+                                sscanf(tokens[i + 1], "%x", &temp);
+                                (*option->colorValue)[i] = temp;
+                            }
+                            break;
                         default:
                             assert(0); // bad type
                     }
@@ -530,6 +559,9 @@ void configfile_save(const char *filename) {
                 break;
             case CONFIG_TYPE_U64:
                 fprintf(file, "%s %llu\n", option->name, *option->u64Value);
+                break;
+            case CONFIG_TYPE_COLOR:
+                fprintf(file, "%s %02x %02x %02x\n", option->name, (*option->colorValue)[0], (*option->colorValue)[1], (*option->colorValue)[2]);
                 break;
             default:
                 assert(0); // unknown type

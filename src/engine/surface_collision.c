@@ -9,7 +9,91 @@
 #include "surface_load.h"
 #include "math_util.h"
 #include "game/game_init.h"
+#include "game/hardcoded.h"
 #include "pc/utils/misc.h"
+#include "pc/network/network.h"
+
+Vec3f gFindWallDirection = { 0 };
+u8 gFindWallDirectionActive = false;
+
+#define CLAMP(_val, _min, _max) MAX(MIN((_val), _max), _min)
+
+static void closest_point_to_triangle(struct Surface* surf, Vec3f src, Vec3f out) {
+    Vec3f v1; vec3s_to_vec3f(v1, surf->vertex1);
+    Vec3f v2; vec3s_to_vec3f(v2, surf->vertex2);
+    Vec3f v3; vec3s_to_vec3f(v3, surf->vertex3);
+
+    Vec3f edge0; vec3f_dif(edge0, v2, v1);
+    Vec3f edge1; vec3f_dif(edge1, v3, v1);
+    Vec3f v0;    vec3f_dif(v0,    v1, src);
+
+    f32 a = vec3f_dot(edge0, edge0);
+    f32 b = vec3f_dot(edge0, edge1);
+    f32 c = vec3f_dot(edge1, edge1);
+    f32 d = vec3f_dot(edge0, v0);
+    f32 e = vec3f_dot(edge1, v0);
+
+    f32 det = (a * c) - (b * b);
+    f32 s   = (b * e) - (c * d);
+    f32 t   = (b * d) - (a * e);
+
+    if ((s + t) < det) {
+        if (s < 0) {
+            if (t < 0) {
+                if (d < 0) {
+                    s = CLAMP(-d/a, 0, 1);
+                    t = 0;
+                } else {
+                    s = 0;
+                    t = CLAMP(-e/c, 0, 1);
+                }
+            } else {
+                s = 0;
+                t = CLAMP(-e/c, 0, 1);
+            }
+        } else if (t < 0) {
+            s = CLAMP(-d/a, 0, 1);
+            t = 0;
+        } else {
+            f32 invDet = 1 / det;
+            s *= invDet;
+            t *= invDet;
+        }
+    } else {
+        if (s < 0) {
+            f32 tmp0 = (b + d);
+            f32 tmp1 = (c + e);
+            if (tmp1 > tmp0) {
+                f32 numer = tmp1 - tmp0;
+                f32 denom = a-2*b+c;
+                s = CLAMP(numer/denom, 0, 1);
+                t = (1 - s);
+            } else {
+                t = CLAMP(-e/c, 0, 1);
+                s = 0;
+            }
+        } else if (t < 0.f) {
+            if ((a + d) > (b + e)) {
+                f32 numer = c+e-b-d;
+                f32 denom = a-2*b+c;
+                s = CLAMP(numer/denom, 0, 1);
+                t = (1 - s);
+            } else {
+                s = CLAMP(-e/c, 0, 1);
+                t = 0;
+            }
+        } else {
+            f32 numer = c+e-b-d;
+            f32 denom = a-2*b+c;
+            s = CLAMP(numer/denom, 0, 1);
+            t = 1 - s;
+        }
+    }
+
+    out[0] = v1[0] + s * edge0[0] + t * edge1[0];
+    out[1] = v1[1] + s * edge0[1] + t * edge1[1];
+    out[2] = v1[2] + s * edge0[2] + t * edge1[2];
+}
 
 /**************************************************
  *                      WALLS                     *
@@ -32,6 +116,9 @@ static s32 find_wall_collisions_from_list(struct SurfaceNode *surfaceNode,
     register f32 y1, y2, y3;
     s32 numCols = 0;
 
+    Vec3f cPos = { 0 };
+    Vec3f cNorm = { 0 };
+
     // Max collision radius = 200
     if (radius > 200.0f) {
         radius = 200.0f;
@@ -47,66 +134,106 @@ static s32 find_wall_collisions_from_list(struct SurfaceNode *surfaceNode,
             continue;
         }
 
-        offset = surf->normal.x * x + surf->normal.y * y + surf->normal.z * z + surf->originOffset;
+        if (gLevelValues.fixCollisionBugs) {
+            // Check AABB to exclude walls before doing expensive triangle check
+            f32 minX = MIN(MIN(surf->vertex1[0], surf->vertex2[0]), surf->vertex3[0]) - radius;
+            f32 minZ = MIN(MIN(surf->vertex1[2], surf->vertex2[2]), surf->vertex3[2]) - radius;
+            f32 maxX = MAX(MAX(surf->vertex1[0], surf->vertex2[0]), surf->vertex3[0]) + radius;
+            f32 maxZ = MAX(MAX(surf->vertex1[2], surf->vertex2[2]), surf->vertex3[2]) + radius;
+            if (x < minX || x > maxX) { continue; }
+            if (z < minZ || z > maxZ) { continue; }
 
-        if (offset < -radius || offset > radius) {
-            continue;
-        }
-
-        px = x;
-        pz = z;
-
-        //! (Quantum Tunneling) Due to issues with the vertices walls choose and
-        //  the fact they are floating point, certain floating point positions
-        //  along the seam of two walls may collide with neither wall or both walls.
-        if (surf->flags & SURFACE_FLAG_X_PROJECTION) {
-            w1 = -surf->vertex1[2];            w2 = -surf->vertex2[2];            w3 = -surf->vertex3[2];
-            y1 = surf->vertex1[1];            y2 = surf->vertex2[1];            y3 = surf->vertex3[1];
-
-            if (surf->normal.x > 0.0f) {
-                if ((y1 - y) * (w2 - w1) - (w1 - -pz) * (y2 - y1) > 0.0f) {
-                    continue;
-                }
-                if ((y2 - y) * (w3 - w2) - (w2 - -pz) * (y3 - y2) > 0.0f) {
-                    continue;
-                }
-                if ((y3 - y) * (w1 - w3) - (w3 - -pz) * (y1 - y3) > 0.0f) {
-                    continue;
-                }
-            } else {
-                if ((y1 - y) * (w2 - w1) - (w1 - -pz) * (y2 - y1) < 0.0f) {
-                    continue;
-                }
-                if ((y2 - y) * (w3 - w2) - (w2 - -pz) * (y3 - y2) < 0.0f) {
-                    continue;
-                }
-                if ((y3 - y) * (w1 - w3) - (w3 - -pz) * (y1 - y3) < 0.0f) {
+            // Exclude triangles from wrong movement side
+            Vec3f norm = { surf->normal.x, surf->normal.y, surf->normal.z };
+            if (gFindWallDirectionActive) {
+                if (vec3f_dot(norm, gFindWallDirection) > 0) {
                     continue;
                 }
             }
-        } else {
-            w1 = surf->vertex1[0];            w2 = surf->vertex2[0];            w3 = surf->vertex3[0];
-            y1 = surf->vertex1[1];            y2 = surf->vertex2[1];            y3 = surf->vertex3[1];
 
-            if (surf->normal.z > 0.0f) {
-                if ((y1 - y) * (w2 - w1) - (w1 - px) * (y2 - y1) > 0.0f) {
-                    continue;
-                }
-                if ((y2 - y) * (w3 - w2) - (w2 - px) * (y3 - y2) > 0.0f) {
-                    continue;
-                }
-                if ((y3 - y) * (w1 - w3) - (w3 - px) * (y1 - y3) > 0.0f) {
-                    continue;
+            // Find closest point to triangle
+            Vec3f src = { x, y, z };
+            closest_point_to_triangle(surf, src, cPos);
+
+            // Exclude triangles where y isn't inside of it
+            if (fabs(cPos[1] - y) > 1) { continue; }
+
+            // Figure out normal
+            f32 dX = src[0] - cPos[0];
+            f32 dZ = src[2] - cPos[2];
+            f32 dist = sqrtf(dX * dX + dZ * dZ);
+            if (dist > radius) { continue; }
+
+            cNorm[0] = dX / dist;
+            cNorm[1] = 0;
+            cNorm[2] = dZ / dist;
+
+            // Exclude triangles that are colliding from the wrong side
+            if (!gFindWallDirectionActive && vec3f_dot(norm, cNorm) < 0) { continue; }
+
+        } else {
+
+            offset = surf->normal.x * x + surf->normal.y * y + surf->normal.z * z + surf->originOffset;
+
+            if (offset < -radius || offset > radius) {
+                continue;
+            }
+
+            px = x;
+            pz = z;
+
+            //! (Quantum Tunneling) Due to issues with the vertices walls choose and
+            //  the fact they are floating point, certain floating point positions
+            //  along the seam of two walls may collide with neither wall or both walls.
+            if (surf->flags & SURFACE_FLAG_X_PROJECTION) {
+                w1 = -surf->vertex1[2]; w2 = -surf->vertex2[2]; w3 = -surf->vertex3[2];
+                y1 = surf->vertex1[1];  y2 = surf->vertex2[1];  y3 = surf->vertex3[1];
+
+                if (surf->normal.x > 0.0f) {
+                    if ((y1 - y) * (w2 - w1) - (w1 - -pz) * (y2 - y1) > 0.0f) {
+                        continue;
+                    }
+                    if ((y2 - y) * (w3 - w2) - (w2 - -pz) * (y3 - y2) > 0.0f) {
+                        continue;
+                    }
+                    if ((y3 - y) * (w1 - w3) - (w3 - -pz) * (y1 - y3) > 0.0f) {
+                        continue;
+                    }
+                } else {
+                    if ((y1 - y) * (w2 - w1) - (w1 - -pz) * (y2 - y1) < 0.0f) {
+                        continue;
+                    }
+                    if ((y2 - y) * (w3 - w2) - (w2 - -pz) * (y3 - y2) < 0.0f) {
+                        continue;
+                    }
+                    if ((y3 - y) * (w1 - w3) - (w3 - -pz) * (y1 - y3) < 0.0f) {
+                        continue;
+                    }
                 }
             } else {
-                if ((y1 - y) * (w2 - w1) - (w1 - px) * (y2 - y1) < 0.0f) {
-                    continue;
-                }
-                if ((y2 - y) * (w3 - w2) - (w2 - px) * (y3 - y2) < 0.0f) {
-                    continue;
-                }
-                if ((y3 - y) * (w1 - w3) - (w3 - px) * (y1 - y3) < 0.0f) {
-                    continue;
+                w1 = surf->vertex1[0]; w2 = surf->vertex2[0]; w3 = surf->vertex3[0];
+                y1 = surf->vertex1[1]; y2 = surf->vertex2[1]; y3 = surf->vertex3[1];
+
+                if (surf->normal.z > 0.0f) {
+                    if ((y1 - y) * (w2 - w1) - (w1 - px) * (y2 - y1) > 0.0f) {
+                        continue;
+                    }
+                    if ((y2 - y) * (w3 - w2) - (w2 - px) * (y3 - y2) > 0.0f) {
+                        continue;
+                    }
+                    if ((y3 - y) * (w1 - w3) - (w3 - px) * (y1 - y3) > 0.0f) {
+                        continue;
+                    }
+                } else {
+                    if ((y1 - y) * (w2 - w1) - (w1 - px) * (y2 - y1) < 0.0f) {
+                        continue;
+                    }
+                    if ((y2 - y) * (w3 - w2) - (w2 - px) * (y3 - y2) < 0.0f) {
+                        continue;
+                    }
+                    if ((y3 - y) * (w1 - w3) - (w3 - px) * (y1 - y3) < 0.0f) {
+                        continue;
+                    }
                 }
             }
         }
@@ -118,7 +245,7 @@ static s32 find_wall_collisions_from_list(struct SurfaceNode *surfaceNode,
             }
         } else {
             // Ignore camera only surfaces.
-            if (surf->type == SURFACE_CAMERA_BOUNDARY) {
+            if (surf->type == SURFACE_CAMERA_BOUNDARY || surf->type == SURFACE_RAYCAST) {
                 continue;
             }
 
@@ -145,8 +272,19 @@ static s32 find_wall_collisions_from_list(struct SurfaceNode *surfaceNode,
 
         //! (Wall Overlaps) Because this doesn't update the x and z local variables,
         //  multiple walls can push mario more than is required.
-        data->x += surf->normal.x * (radius - offset);
-        data->z += surf->normal.z * (radius - offset);
+        //  <Fixed when gLevelValues.fixCollisionBugs != 0>
+        if (gLevelValues.fixCollisionBugs) {
+            data->x = cPos[0] + cNorm[0] * radius;
+            data->z = cPos[2] + cNorm[2] * radius;
+            x = data->x;
+            z = data->z;
+            data->normalAddition[0] += cNorm[0];
+            data->normalAddition[2] += cNorm[2];
+            data->normalCount++;
+        } else {
+            data->x += surf->normal.x * (radius - offset);
+            data->z += surf->normal.z * (radius - offset);
+        }
 
         //! (Unreferenced Walls) Since this only returns the first four walls,
         //  this can lead to wall interaction being missed. Typically unreferenced walls
@@ -240,6 +378,11 @@ static struct Surface *find_ceil_from_list(struct SurfaceNode *surfaceNode, s32 
 
     ceil = NULL;
 
+    // set pheight to highest value
+    if (gLevelValues.fixCollisionBugs) {
+        *pheight = gLevelValues.ceilHeightLimit;
+    }
+
     // Stay in this loop until out of ceilings.
     while (surfaceNode != NULL) {
         surf = surfaceNode->surface;
@@ -272,7 +415,7 @@ static struct Surface *find_ceil_from_list(struct SurfaceNode *surfaceNode, s32 
             }
         }
         // Ignore camera only surfaces.
-        else if (surf->type == SURFACE_CAMERA_BOUNDARY) {
+        else if (surf->type == SURFACE_CAMERA_BOUNDARY || surf->type == SURFACE_RAYCAST) {
             continue;
         }
 
@@ -284,29 +427,37 @@ static struct Surface *find_ceil_from_list(struct SurfaceNode *surfaceNode, s32 
             f32 height;
 
             // If a wall, ignore it. Likely a remnant, should never occur.
-            if (ny == 0.0f) {
-                continue;
-            }
+            if (ny == 0.0f) { continue; }
 
             // Find the ceil height at the specific point.
             height = -(x * nx + nz * z + oo) / ny;
+
+            // Reject ceilings below previously found ceiling
+            if (gLevelValues.fixCollisionBugs && (height > *pheight)) {
+                continue;
+            }
 
             // Checks for ceiling interaction with a 78 unit buffer.
             //! (Exposed Ceilings) Because any point above a ceiling counts
             //  as interacting with a ceiling, ceilings far below can cause
             // "invisible walls" that are really just exposed ceilings.
+            //  <Fixed when gLevelValues.fixCollisionBugs != 0>
             if (y - (height - -78.0f) > 0.0f) {
                 continue;
             }
 
             *pheight = height;
             ceil = surf;
-            break;
+
+            if (!gLevelValues.fixCollisionBugs) {
+                break;
+            }
         }
     }
 
     //! (Surface Cucking) Since only the first ceil is returned and not the lowest,
     //  lower ceilings can be "cucked" by higher ceilings.
+    //  <Fixed when gLevelValues.fixCollisionBugs != 0>
     return ceil;
 }
 
@@ -317,8 +468,8 @@ f32 find_ceil(f32 posX, f32 posY, f32 posZ, struct Surface **pceil) {
     s16 cellZ, cellX;
     struct Surface *ceil, *dynamicCeil;
     struct SurfaceNode *surfaceList;
-    f32 height = CELL_HEIGHT_LIMIT;
-    f32 dynamicHeight = CELL_HEIGHT_LIMIT;
+    f32 height = gLevelValues.ceilHeightLimit;
+    f32 dynamicHeight = gLevelValues.ceilHeightLimit;
     s16 x, y, z;
 
     //! (Parallel Universes) Because position is casted to an s16, reaching higher
@@ -428,6 +579,11 @@ static struct Surface *find_floor_from_list(struct SurfaceNode *surfaceNode, s32
     struct Surface *floor = NULL;
     s32 interpolate;
 
+    // set pheight to lowest value
+    if (gLevelValues.fixCollisionBugs) {
+        *pheight = gLevelValues.floorLowerLimit;
+    }
+
     // Iterate through the list of floors until there are no more floors.
     while (surfaceNode != NULL) {
         surf = surfaceNode->surface;
@@ -487,7 +643,7 @@ static struct Surface *find_floor_from_list(struct SurfaceNode *surfaceNode, s32
             }
         }
         // If we are not checking for the camera, ignore camera only floors.
-        else if (surf->type == SURFACE_CAMERA_BOUNDARY) {
+        else if (surf->type == SURFACE_CAMERA_BOUNDARY || surf->type == SURFACE_RAYCAST) {
             continue;
         }
 
@@ -524,6 +680,12 @@ static struct Surface *find_floor_from_list(struct SurfaceNode *surfaceNode, s32
 
         // Find the height of the floor at a given location.
         height = -(x * nx + nz * z + oo) / ny;
+
+        // Find highest floor
+        if (gLevelValues.fixCollisionBugs && (height < *pheight)) {
+            continue;
+        }
+
         // Checks for floor interaction with a 78 unit buffer.
         if (y - (height + -78.0f) < 0.0f) {
             continue;
@@ -544,11 +706,15 @@ static struct Surface *find_floor_from_list(struct SurfaceNode *surfaceNode, s32
         }
 
         floor = surf;
-        break;
+
+        if (!gLevelValues.fixCollisionBugs) {
+            break;
+        }
     }
 
     //! (Surface Cucking) Since only the first floor is returned and not the highest,
     //  higher floors can be "cucked" by lower floors.
+    //  <Fixed when gLevelValues.fixCollisionBugs != 0>
     return floor;
 }
 
@@ -570,7 +736,7 @@ f32 find_floor_height(f32 x, f32 y, f32 z) {
 f32 unused_find_dynamic_floor(f32 xPos, f32 yPos, f32 zPos, struct Surface **pfloor) {
     struct SurfaceNode *surfaceList;
     struct Surface *floor;
-    f32 floorHeight = FLOOR_LOWER_LIMIT;
+    f32 floorHeight = gLevelValues.floorLowerLimit;
 
     // Would normally cause PUs, but dynamic floors unload at that range.
     s16 x = (s16) xPos;
@@ -598,8 +764,8 @@ f32 find_floor(f32 xPos, f32 yPos, f32 zPos, struct Surface **pfloor) {
     struct Surface *floor, *dynamicFloor;
     struct SurfaceNode *surfaceList;
 
-    f32 height = FLOOR_LOWER_LIMIT;
-    f32 dynamicHeight = FLOOR_LOWER_LIMIT;
+    f32 height = gLevelValues.floorLowerLimit;
+    f32 dynamicHeight = gLevelValues.floorLowerLimit;
 
     //! (Parallel Universes) Because position is casted to an s16, reaching higher
     // float locations  can return floors despite them not existing there.
@@ -677,7 +843,7 @@ f32 find_water_level(f32 x, f32 z) {
     s32 numRegions;
     s16 val;
     f32 loX, hiX, loZ, hiZ;
-    f32 waterLevel = FLOOR_LOWER_LIMIT;
+    f32 waterLevel = gLevelValues.floorLowerLimit;
     s16 *p = gEnvironmentRegions;
 
     if (p != NULL) {
@@ -713,7 +879,7 @@ f32 find_poison_gas_level(f32 x, f32 z) {
     UNUSED s32 unused;
     s16 val;
     f32 loX, hiX, loZ, hiZ;
-    f32 gasLevel = FLOOR_LOWER_LIMIT;
+    f32 gasLevel = gLevelValues.floorLowerLimit;
     s16 *p = gEnvironmentRegions;
 
     if (p != NULL) {

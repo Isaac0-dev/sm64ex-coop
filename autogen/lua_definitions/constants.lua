@@ -1983,7 +1983,13 @@ id_bhvYellowCoin = 533
 id_bhvYoshi = 534
 
 --- @type BehaviorId
-id_bhv_max_count = 535
+id_RM_Scroll_Texture = 535
+
+--- @type BehaviorId
+id_editor_Scroll_Texture = 536
+
+--- @type BehaviorId
+id_bhv_max_count = 537
 
 --- @type integer
 CAMERA_MODE_8_DIRECTIONS = 0x0E
@@ -2523,7 +2529,7 @@ SHAKE_SHOCK = 10
 SHAKE_SMALL_DAMAGE = 3
 
 --- @type integer
-PALETTE_MAX = 32
+PALETTE_PRESET_MAX = 32
 
 --- @class CharacterSound
 
@@ -2681,6 +2687,29 @@ CT_WARIO = 4
 
 --- @type CharacterType
 CT_MAX = 5
+
+--- @class PlayerParts
+
+--- @type PlayerParts
+PANTS = 0
+
+--- @type PlayerParts
+SHIRT = 1
+
+--- @type PlayerParts
+GLOVES = 2
+
+--- @type PlayerParts
+SHOES = 3
+
+--- @type PlayerParts
+HAIR = 4
+
+--- @type PlayerParts
+SKIN = 5
+
+--- @type PlayerParts
+PLAYER_PART_MAX = 6
 
 --- @class DialogId
 
@@ -3714,6 +3743,173 @@ LEVEL_UNKNOWN_38 = 38
 --- @type LevelNum
 LEVEL_COUNT = 39
 
+--- @type integer
+MARIO_SPAWN_AIRBORNE = 0x12
+
+--- @type integer
+MARIO_SPAWN_AIRBORNE_DEATH = 0x23
+
+--- @type integer
+MARIO_SPAWN_AIRBORNE_STAR_COLLECT = 0x22
+
+--- @type integer
+MARIO_SPAWN_DEATH = 0x15
+
+--- @type integer
+MARIO_SPAWN_DOOR_WARP = 0x01
+
+--- @type integer
+MARIO_SPAWN_FLYING = 0x17
+
+--- @type integer
+MARIO_SPAWN_HARD_AIR_KNOCKBACK = 0x13
+
+--- @type integer
+MARIO_SPAWN_INSTANT_ACTIVE = 0x10
+
+--- @type integer
+MARIO_SPAWN_LAUNCH_DEATH = 0x25
+
+--- @type integer
+MARIO_SPAWN_LAUNCH_STAR_COLLECT = 0x24
+
+--- @type integer
+MARIO_SPAWN_PAINTING_DEATH = 0x21
+
+--- @type integer
+MARIO_SPAWN_PAINTING_STAR_COLLECT = 0x20
+
+--- @type integer
+MARIO_SPAWN_SPIN_AIRBORNE = 0x16
+
+--- @type integer
+MARIO_SPAWN_SPIN_AIRBORNE_CIRCLE = 0x14
+
+--- @type integer
+MARIO_SPAWN_SWIMMING = 0x11
+
+--- @type integer
+MARIO_SPAWN_TELEPORT = 0x04
+
+--- @type integer
+MARIO_SPAWN_UNKNOWN_02 = 0x02
+
+--- @type integer
+MARIO_SPAWN_UNKNOWN_03 = 0x03
+
+--- @type integer
+MARIO_SPAWN_UNKNOWN_27 = 0x27
+
+--- @type integer
+TIMER_CONTROL_HIDE = 3
+
+--- @type integer
+TIMER_CONTROL_SHOW = 0
+
+--- @type integer
+TIMER_CONTROL_START = 1
+
+--- @type integer
+TIMER_CONTROL_STOP = 2
+
+--- @type integer
+WARP_OP_CREDITS_END = 0x15
+
+--- @type integer
+WARP_OP_CREDITS_NEXT = 0x18
+
+--- @type integer
+WARP_OP_CREDITS_START = 0x17
+
+--- @type integer
+WARP_OP_DEATH = 0x12
+
+--- @type integer
+WARP_OP_DEMO_END = 0x19
+
+--- @type integer
+WARP_OP_DEMO_NEXT = 0x16
+
+--- @type integer
+WARP_OP_EXIT = 0x21
+
+--- @type integer
+WARP_OP_FORCE_SYNC = 0x20
+
+--- @type integer
+WARP_OP_GAME_OVER = 0x14
+
+--- @type integer
+WARP_OP_LOOK_UP = 0x01
+
+--- @type integer
+WARP_OP_NONE = 0x00
+
+--- @type integer
+WARP_OP_SPIN_SHRINK = 0x02
+
+--- @type integer
+WARP_OP_STAR_EXIT = 0x11
+
+--- @type integer
+WARP_OP_TELEPORT = 0x05
+
+--- @type integer
+WARP_OP_TRIGGERS_LEVEL_SELECT = 0x10
+
+--- @type integer
+WARP_OP_WARP_DOOR = 0x03
+
+--- @type integer
+WARP_OP_WARP_FLOOR = 0x13
+
+--- @type integer
+WARP_OP_WARP_OBJECT = 0x04
+
+--- @type integer
+WARP_TYPE_CHANGE_AREA = 2
+
+--- @type integer
+WARP_TYPE_CHANGE_LEVEL = 1
+
+--- @type integer
+WARP_TYPE_NOT_WARPING = 0
+
+--- @type integer
+WARP_TYPE_SAME_AREA = 3
+
+--- @class HUDDisplayFlag
+
+--- @type HUDDisplayFlag
+HUD_DISPLAY_FLAG_LIVES = 0x0001
+
+--- @type HUDDisplayFlag
+HUD_DISPLAY_FLAG_COIN_COUNT = 0x0002
+
+--- @type HUDDisplayFlag
+HUD_DISPLAY_FLAG_STAR_COUNT = 0x0004
+
+--- @type HUDDisplayFlag
+HUD_DISPLAY_FLAG_CAMERA_AND_POWER = 0x0008
+
+--- @type HUDDisplayFlag
+HUD_DISPLAY_FLAG_KEYS = 0x0010
+
+--- @type HUDDisplayFlag
+HUD_DISPLAY_FLAG_UNKNOWN_0020 = 0x0020
+
+--- @type HUDDisplayFlag
+HUD_DISPLAY_FLAG_TIMER = 0x0040
+
+--- @type HUDDisplayFlag
+HUD_DISPLAY_FLAG_EMPHASIZE_POWER = 0x8000
+
+--- @type HUDDisplayFlag
+HUD_DISPLAY_NONE = 0x0000
+
+--- @type HUDDisplayFlag
+HUD_DISPLAY_DEFAULT = HUD_DISPLAY_FLAG_LIVES | HUD_DISPLAY_FLAG_COIN_COUNT | HUD_DISPLAY_FLAG_STAR_COUNT | HUD_DISPLAY_FLAG_CAMERA_AND_POWER | HUD_DISPLAY_FLAG_KEYS | HUD_DISPLAY_FLAG_UNKNOWN_0020
+
 --- @class MarioAnimID
 
 --- @type MarioAnimID
@@ -4421,12 +4617,6 @@ MARIO_HAND_HOLDING_WING_CAP = 4
 MARIO_HAND_RIGHT_OPEN = 5
 
 --- @type integer
-MAX_SYNC_OBJECTS = 256
-
---- @type integer
-MAX_SYNC_OBJECT_FIELDS = 64
-
---- @type integer
 PACKET_LENGTH = 3000
 
 --- @type integer
@@ -4465,6 +4655,9 @@ UNKNOWN_LOCAL_INDEX = (-1)
 
 --- @type integer
 UNKNOWN_NETWORK_INDEX = (-1)
+
+--- @type integer
+USE_REAL_PALETTE_VAR = 0xFF
 
 --- @class NetworkPlayerType
 
@@ -7834,6 +8027,17 @@ WATER_STEP_HIT_WALL = 4
 --- @type integer
 WATER_STEP_NONE = 0
 
+--- @class LuaActionHookType
+
+--- @type LuaActionHookType
+ACTION_HOOK_EVERY_FRAME = 0
+
+--- @type LuaActionHookType
+ACTION_HOOK_GRAVITY = 1
+
+--- @type LuaActionHookType
+ACTION_HOOK_MAX = 2
+
 --- @class LuaHookedEventType
 
 --- @type LuaHookedEventType
@@ -7906,7 +8110,16 @@ HOOK_ON_DEATH = 21
 HOOK_ON_PACKET_RECEIVE = 22
 
 --- @type LuaHookedEventType
-HOOK_MAX = 23
+HOOK_USE_ACT_SELECT = 23
+
+--- @type LuaHookedEventType
+HOOK_ON_CHANGE_CAMERA_ANGLE = 24
+
+--- @type LuaHookedEventType
+HOOK_ON_SCREEN_TRANSITION = 25
+
+--- @type LuaHookedEventType
+HOOK_MAX = 26
 
 --- @class HudDisplayFlags
 
@@ -10970,6 +11183,9 @@ SURFACE_PAINTING_WOBBLE_D2 = 0x00D2
 
 --- @type integer
 SURFACE_QUICKSAND = 0x0026
+
+--- @type integer
+SURFACE_RAYCAST = 0x0003
 
 --- @type integer
 SURFACE_SHALLOW_MOVING_QUICKSAND = 0x0025

@@ -15,7 +15,9 @@
 - [CameraTrigger](#CameraTrigger)
 - [ChainSegment](#ChainSegment)
 - [Character](#Character)
+- [Color](#Color)
 - [Controller](#Controller)
+- [CustomLevelInfo](#CustomLevelInfo)
 - [Cutscene](#Cutscene)
 - [CutsceneSplinePoint](#CutsceneSplinePoint)
 - [CutsceneVariable](#CutsceneVariable)
@@ -47,6 +49,7 @@
 - [ParallelTrackingPoint](#ParallelTrackingPoint)
 - [PlayerCameraState](#PlayerCameraState)
 - [PlayerGeometry](#PlayerGeometry)
+- [PlayerPalette](#PlayerPalette)
 - [RayIntersectionInfo](#RayIntersectionInfo)
 - [SPTask](#SPTask)
 - [ServerSettings](#ServerSettings)
@@ -54,6 +57,7 @@
 - [SpawnInfo](#SpawnInfo)
 - [SpawnParticlesInfo](#SpawnParticlesInfo)
 - [StarPositions](#StarPositions)
+- [StarsNeededForDialog](#StarsNeededForDialog)
 - [Struct802A272C](#Struct802A272C)
 - [Surface](#Surface)
 - [TextureInfo](#TextureInfo)
@@ -250,6 +254,8 @@
 | ----- | ---- | ------ |
 | BowlingBallBob2Trajectory | `Pointer` <`Trajectory`> |  |
 | BowlingBallBobTrajectory | `Pointer` <`Trajectory`> |  |
+| BowlingBallThiLargeTrajectory | `Pointer` <`Trajectory`> |  |
+| BowlingBallThiSmallTrajectory | `Pointer` <`Trajectory`> |  |
 | BowlingBallTtmTrajectory | `Pointer` <`Trajectory`> |  |
 | KoopaBobTrajectory | `Pointer` <`Trajectory`> |  |
 | KoopaThiTrajectory | `Pointer` <`Trajectory`> |  |
@@ -285,17 +291,31 @@
 
 | Field | Type | Access |
 | ----- | ---- | ------ |
+| BowlingBallBob2Speed | `number` |  |
+| BowlingBallBobSpeed | `number` |  |
+| BowlingBallThiLargeSpeed | `number` |  |
+| BowlingBallThiSmallSpeed | `number` |  |
+| BowlingBallTtmSpeed | `number` |  |
+| GrateStarRequirement | `integer` |  |
+| KingBobombFVel | `number` |  |
+| KingBobombHealth | `integer` |  |
+| KingBobombYawVel | `integer` |  |
+| KingWhompHealth | `integer` |  |
 | KoopaBobAgility | `number` |  |
 | KoopaCatchupAgility | `number` |  |
 | KoopaThiAgility | `number` |  |
+| MipsStar1Requirement | `integer` |  |
+| MipsStar2Requirement | `integer` |  |
 | RacingPenguinBigHeight | `number` |  |
 | RacingPenguinBigRadius | `number` |  |
 | RacingPenguinHeight | `number` |  |
 | RacingPenguinRadius | `number` |  |
+| ShowStarMilestones | `integer` |  |
 | ToadStar1Requirement | `integer` |  |
 | ToadStar2Requirement | `integer` |  |
 | ToadStar3Requirement | `integer` |  |
 | dialogs | [BehaviorDialogs](structs.md#BehaviorDialogs) | read-only |
+| starsNeededForDialog | [StarsNeededForDialog](structs.md#StarsNeededForDialog) | read-only |
 | trajectories | [BehaviorTrajectories](structs.md#BehaviorTrajectories) | read-only |
 
 [:arrow_up_small:](#)
@@ -470,6 +490,18 @@
 
 <br />
 
+## [Color](#Color)
+
+| Field | Type | Access |
+| ----- | ---- | ------ |
+| b | `integer` |  |
+| g | `integer` |  |
+| r | `integer` |  |
+
+[:arrow_up_small:](#)
+
+<br />
+
 ## [Controller](#Controller)
 
 | Field | Type | Access |
@@ -484,6 +516,26 @@
 | stickMag | `number` |  |
 | stickX | `number` |  |
 | stickY | `number` |  |
+
+[:arrow_up_small:](#)
+
+<br />
+
+## [CustomLevelInfo](#CustomLevelInfo)
+
+| Field | Type | Access |
+| ----- | ---- | ------ |
+| acousticReach | `integer` |  |
+| courseNum | `integer` |  |
+| echoLevel1 | `integer` |  |
+| echoLevel2 | `integer` |  |
+| echoLevel3 | `integer` |  |
+| fullName | `string` | read-only |
+| levelNum | `integer` |  |
+| next | [CustomLevelInfo](structs.md#CustomLevelInfo) |  |
+| script | `Pointer` <`LevelScript`> | read-only |
+| scriptEntryName | `string` | read-only |
+| shortName | `string` | read-only |
 
 [:arrow_up_small:](#)
 
@@ -544,6 +596,7 @@
 | ----- | ---- | ------ |
 | amp_seg8_anims_08004034 | `Pointer` <`ObjectAnimPointer`> | read-only |
 | birds_seg5_anims_050009E8 | `Pointer` <`ObjectAnimPointer`> | read-only |
+| blargg_seg5_anims_0500616C | `Pointer` <`ObjectAnimPointer`> | read-only |
 | blue_fish_seg3_anims_0301C2B0 | `Pointer` <`ObjectAnimPointer`> | read-only |
 | bobomb_seg8_anims_0802396C | `Pointer` <`ObjectAnimPointer`> | read-only |
 | bookend_seg5_anims_05002540 | `Pointer` <`ObjectAnimPointer`> | read-only |
@@ -558,6 +611,7 @@
 | chilly_chief_seg6_anims_06003994 | `Pointer` <`ObjectAnimPointer`> | read-only |
 | chuckya_seg8_anims_0800C070 | `Pointer` <`ObjectAnimPointer`> | read-only |
 | clam_shell_seg5_anims_05001744 | `Pointer` <`ObjectAnimPointer`> | read-only |
+| cyan_fish_seg6_anims_0600E264 | `Pointer` <`ObjectAnimPointer`> | read-only |
 | door_seg3_anims_030156C0 | `Pointer` <`ObjectAnimPointer`> | read-only |
 | dorrie_seg6_anims_0600F638 | `Pointer` <`ObjectAnimPointer`> | read-only |
 | eyerok_seg5_anims_050116E4 | `Pointer` <`ObjectAnimPointer`> | read-only |
@@ -584,6 +638,7 @@
 | skeeter_seg6_anims_06007DE0 | `Pointer` <`ObjectAnimPointer`> | read-only |
 | snowman_seg5_anims_0500D118 | `Pointer` <`ObjectAnimPointer`> | read-only |
 | spindrift_seg5_anims_05002D68 | `Pointer` <`ObjectAnimPointer`> | read-only |
+| spiny_egg_seg5_anims_050157E4 | `Pointer` <`ObjectAnimPointer`> | read-only |
 | spiny_seg5_anims_05016EAC | `Pointer` <`ObjectAnimPointer`> | read-only |
 | sushi_seg5_anims_0500AE54 | `Pointer` <`ObjectAnimPointer`> | read-only |
 | swoop_seg6_anims_060070D0 | `Pointer` <`ObjectAnimPointer`> | read-only |
@@ -629,6 +684,7 @@
 | ddd_seg7_collision_submarine | `Pointer` <`Collision`> |  |
 | door_seg3_collision_0301CE78 | `Pointer` <`Collision`> |  |
 | dorrie_seg6_collision_0600F644 | `Pointer` <`Collision`> |  |
+| dorrie_seg6_collision_0600FBB8 | `Pointer` <`Collision`> |  |
 | exclamation_box_outline_seg8_collision_08025F78 | `Pointer` <`Collision`> |  |
 | hmc_seg7_collision_controllable_platform | `Pointer` <`Collision`> |  |
 | hmc_seg7_collision_controllable_platform_sub | `Pointer` <`Collision`> |  |
@@ -685,6 +741,7 @@
 | ttm_seg7_collision_pitoune_2 | `Pointer` <`Collision`> |  |
 | ttm_seg7_collision_podium_warp | `Pointer` <`Collision`> |  |
 | ttm_seg7_collision_ukiki_cage | `Pointer` <`Collision`> |  |
+| unknown_seg8_collision_080262F8 | `Pointer` <`Collision`> |  |
 | warp_pipe_seg3_collision_03009AC8 | `Pointer` <`Collision`> |  |
 | wdw_seg7_collision_arrow_lift | `Pointer` <`Collision`> |  |
 | wdw_seg7_collision_express_elevator_platform | `Pointer` <`Collision`> |  |
@@ -717,8 +774,13 @@
 | camera | [TextureInfo](structs.md#TextureInfo) | read-only |
 | coin | [TextureInfo](structs.md#TextureInfo) | read-only |
 | lakitu | [TextureInfo](structs.md#TextureInfo) | read-only |
+| luigi_head | [TextureInfo](structs.md#TextureInfo) | read-only |
+| mario_head | [TextureInfo](structs.md#TextureInfo) | read-only |
 | no_camera | [TextureInfo](structs.md#TextureInfo) | read-only |
 | star | [TextureInfo](structs.md#TextureInfo) | read-only |
+| toad_head | [TextureInfo](structs.md#TextureInfo) | read-only |
+| waluigi_head | [TextureInfo](structs.md#TextureInfo) | read-only |
+| wario_head | [TextureInfo](structs.md#TextureInfo) | read-only |
 
 [:arrow_up_small:](#)
 
@@ -761,6 +823,7 @@
 | prevTimestamp | `integer` |  |
 | scale | [Vec3f](structs.md#Vec3f) | read-only |
 | sharedChild | [GraphNode](structs.md#GraphNode) |  |
+| skipInViewCheck | `boolean` |  |
 | skipInterpolationTimestamp | `integer` |  |
 | unk4C | [SpawnInfo](structs.md#SpawnInfo) |  |
 
@@ -855,11 +918,16 @@
 
 | Field | Type | Access |
 | ----- | ---- | ------ |
+| ceilHeightLimit | `integer` |  |
 | coinsRequiredForCoinStar | `integer` |  |
 | entryLevel | [enum LevelNum](constants.md#enum-LevelNum) |  |
 | exitCastleArea | `integer` |  |
 | exitCastleLevel | [enum LevelNum](constants.md#enum-LevelNum) |  |
 | exitCastleWarpNode | `integer` |  |
+| fixCollisionBugs | `integer` |  |
+| floorLowerLimit | `integer` |  |
+| floorLowerLimitMisc | `integer` |  |
+| floorLowerLimitShadow | `integer` |  |
 | metalCapDuration | `integer` |  |
 | metalCapDurationCotmc | `integer` |  |
 | pssSlideStarIndex | `integer` |  |
@@ -999,6 +1067,7 @@
 | vel | [Vec3f](structs.md#Vec3f) | read-only |
 | wall | [Surface](structs.md#Surface) |  |
 | wallKickTimer | `integer` |  |
+| wallNormal | [Vec3f](structs.md#Vec3f) | read-only |
 | wasNetworkVisible | `integer` |  |
 | waterLevel | `integer` |  |
 
@@ -1030,9 +1099,8 @@
 | Field | Type | Access |
 | ----- | ---- | ------ |
 | cachedPath | `string` | read-only |
-| complete | `boolean` | read-only |
-| curOffset | `integer` | read-only |
 | relativePath | `string` | read-only |
+| wroteBytes | `integer` | read-only |
 
 [:arrow_up_small:](#)
 
@@ -1065,6 +1133,7 @@
 | currLevelAreaSeqId | `integer` | read-only |
 | currLevelNum | `integer` | read-only |
 | currLevelSyncValid | `boolean` | read-only |
+| currPositionValid | `boolean` | read-only |
 | description | `string` | read-only |
 | descriptionA | `integer` | read-only |
 | descriptionB | `integer` | read-only |
@@ -1079,7 +1148,10 @@
 | name | `string` | read-only |
 | onRxSeqId | `integer` | read-only |
 | overrideModelIndex | `integer` |  |
+| overridePalette | [PlayerPalette](structs.md#PlayerPalette) |  |
 | overridePaletteIndex | `integer` |  |
+| overridePaletteIndexLp | `integer` | read-only |
+| palette | [PlayerPalette](structs.md#PlayerPalette) | read-only |
 | paletteIndex | `integer` | read-only |
 | type | `integer` | read-only |
 
@@ -1116,6 +1188,7 @@
 | platform | [Object](structs.md#Object) |  |
 | prevObj | [Object](structs.md#Object) |  |
 | respawnInfoType | `integer` |  |
+| setHome | `integer` |  |
 | unused1 | `integer` |  |
 | usingObj | [Object](structs.md#Object) |  |
 
@@ -1962,6 +2035,15 @@
 
 <br />
 
+## [PlayerPalette](#PlayerPalette)
+
+| Field | Type | Access |
+| ----- | ---- | ------ |
+
+[:arrow_up_small:](#)
+
+<br />
+
 ## [RayIntersectionInfo](#RayIntersectionInfo)
 
 | Field | Type | Access |
@@ -2075,6 +2157,21 @@
 
 <br />
 
+## [StarsNeededForDialog](#StarsNeededForDialog)
+
+| Field | Type | Access |
+| ----- | ---- | ------ |
+| dialog1 | `integer` |  |
+| dialog2 | `integer` |  |
+| dialog3 | `integer` |  |
+| dialog4 | `integer` |  |
+| dialog5 | `integer` |  |
+| dialog6 | `integer` |  |
+
+[:arrow_up_small:](#)
+
+<br />
+
 ## [Struct802A272C](#Struct802A272C)
 
 | Field | Type | Access |
@@ -2170,6 +2267,8 @@
 
 | Field | Type | Access |
 | ----- | ---- | ------ |
+| normalAddition | [Vec3f](structs.md#Vec3f) | read-only |
+| normalCount | `integer` |  |
 | numWalls | `integer` |  |
 | offsetY | `number` |  |
 | radius | `number` |  |

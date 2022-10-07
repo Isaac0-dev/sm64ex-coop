@@ -467,13 +467,11 @@ void update_walking_speed(struct MarioState *m) {
         m->forwardVel = 48.0f;
     }
 
-    /* Handles the "Super responsive controls" cheat. The content of the "else" is Mario's original code for turning around.*/
-
-    if (Cheats.Responsive == true && Cheats.EnableCheats == true ) {
+    // handles the "Super responsive controls" cheat. The content of the "else" is Mario's original code for turning around.
+    if (Cheats.enabled && Cheats.responsive) {
         m->faceAngle[1] = m->intendedYaw;
-    }
-    else {
-         m->faceAngle[1] = m->intendedYaw - approach_s32((s16)(m->intendedYaw - m->faceAngle[1]), 0, 0x800, 0x800);
+    } else {
+        m->faceAngle[1] = m->intendedYaw - approach_s32((s16)(m->intendedYaw - m->faceAngle[1]), 0, 0x800, 0x800);
     }
     apply_slope_accel(m);
 }
@@ -695,7 +693,7 @@ void push_or_sidle_wall(struct MarioState *m, Vec3f startPos) {
     }
 
     if (m->wall != NULL) {
-        wallAngle = atan2s(m->wall->normal.z, m->wall->normal.x);
+        wallAngle = atan2s(m->wallNormal[2], m->wallNormal[0]);
         dWallAngle = wallAngle - m->faceAngle[1];
     }
 
@@ -887,7 +885,7 @@ s32 act_move_punching(struct MarioState *m) {
 }
 
 s32 act_hold_walking(struct MarioState *m) {
-    if (m->heldObj != NULL && m->heldObj->behavior == segmented_to_virtual(bhvJumpingBox)) {
+    if (m->heldObj != NULL && m->heldObj->behavior == segmented_to_virtual(smlua_override_behavior(bhvJumpingBox))) {
         return set_mario_action(m, ACT_CRAZY_BOX_BOUNCE, 0);
     }
 
@@ -1407,7 +1405,7 @@ void common_slide_action(struct MarioState *m, u32 endAction, u32 airAction, s32
 #endif
                 slide_bonk(m, ACT_GROUND_BONK, endAction);
             } else if (m->wall != NULL) {
-                s16 wallAngle = atan2s(m->wall->normal.z, m->wall->normal.x);
+                s16 wallAngle = atan2s(m->wallNormal[2], m->wallNormal[0]);
                 f32 slideSpeed = sqrtf(m->slideVelX * m->slideVelX + m->slideVelZ * m->slideVelZ);
 
                 if ((slideSpeed *= 0.9) < 4.0f) {
@@ -2002,7 +2000,7 @@ s32 mario_execute_moving_action(struct MarioState *m) {
         return TRUE;
     }
 
-    if (!smlua_call_action_hook(m, &cancel)) {
+    if (!smlua_call_action_hook(ACTION_HOOK_EVERY_FRAME, m, &cancel)) {
         /* clang-format off */
         switch (m->action) {
             case ACT_WALKING:                  cancel = act_walking(m);                  break;

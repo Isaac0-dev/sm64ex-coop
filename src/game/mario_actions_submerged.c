@@ -81,15 +81,15 @@ static f32 get_buoyancy(struct MarioState *m) {
 }
 
 u32 perform_water_full_step(struct MarioState *m, Vec3f nextPos) {
-    struct Surface *wall;
+    struct WallCollisionData wcd = { 0 };
     struct Surface *ceil;
     struct Surface *floor;
     f32 ceilHeight;
     f32 floorHeight;
 
-    wall = resolve_and_return_wall_collisions(nextPos, 10.0f, 110.0f);
+    resolve_and_return_wall_collisions_data(nextPos, 10.0f, 110.0f, &wcd);
     floorHeight = find_floor(nextPos[0], nextPos[1], nextPos[2], &floor);
-    ceilHeight = vec3f_find_ceil(nextPos, floorHeight, &ceil);
+    ceilHeight = vec3f_mario_ceil(nextPos, floorHeight, &ceil);
 
     if (floor == NULL) {
         return WATER_STEP_CANCELLED;
@@ -101,7 +101,7 @@ u32 perform_water_full_step(struct MarioState *m, Vec3f nextPos) {
             m->floor = floor;
             m->floorHeight = floorHeight;
 
-            if (wall != NULL) {
+            if (wcd.numWalls > 0) {
                 return WATER_STEP_HIT_WALL;
             } else {
                 return WATER_STEP_NONE;
@@ -869,7 +869,7 @@ static s32 act_water_punch(struct MarioState *m) {
         case 2:
             set_mario_animation(m, MARIO_ANIM_WATER_PICK_UP_OBJ);
             if (is_anim_at_end(m)) {
-                if (m->heldObj != NULL && m->heldObj->behavior == segmented_to_virtual(bhvKoopaShellUnderwater)) {
+                if (m->heldObj != NULL && m->heldObj->behavior == segmented_to_virtual(smlua_override_behavior(bhvKoopaShellUnderwater))) {
                     if (m->playerIndex == 0) { play_shell_music(); }
                     set_mario_action(m, ACT_WATER_SHELL_SWIMMING, 0);
                 } else {
@@ -1593,7 +1593,7 @@ s32 mario_execute_submerged_action(struct MarioState *m) {
     m->marioBodyState->headAngle[1] = 0;
     m->marioBodyState->headAngle[2] = 0;
 
-    if (!smlua_call_action_hook(m, &cancel)) {
+    if (!smlua_call_action_hook(ACTION_HOOK_EVERY_FRAME, m, &cancel)) {
         /* clang-format off */
         switch (m->action) {
             case ACT_WATER_IDLE:                 cancel = act_water_idle(m);                 break;

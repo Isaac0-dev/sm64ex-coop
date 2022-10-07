@@ -8,6 +8,7 @@
 - [characters.h](#charactersh)
     - [enum CharacterSound](#enum-CharacterSound)
     - [enum CharacterType](#enum-CharacterType)
+    - [enum PlayerParts](#enum-PlayerParts)
 - [dialog_ids.h](#dialog_idsh)
     - [enum DialogId](#enum-DialogId)
 - [djui_hud_utils.h](#djui_hud_utilsh)
@@ -20,6 +21,8 @@
     - [enum InteractionType](#enum-InteractionType)
 - [level_defines.h](#level_definesh)
     - [enum LevelNum](#enum-LevelNum)
+- [level_update.h](#level_updateh)
+    - [enum HUDDisplayFlag](#enum-HUDDisplayFlag)
 - [mario_animation_ids.h](#mario_animation_idsh)
     - [enum MarioAnimID](#enum-MarioAnimID)
 - [mario_geo_switch_case_ids.h](#mario_geo_switch_case_idsh)
@@ -44,6 +47,7 @@
     - [enum SeqId](#enum-SeqId)
 - [sm64.h](#sm64h)
 - [smlua_hooks.h](#smlua_hooksh)
+    - [enum LuaActionHookType](#enum-LuaActionHookType)
     - [enum LuaHookedEventType](#enum-LuaHookedEventType)
 - [smlua_misc_utils.h](#smlua_misc_utilsh)
     - [enum HudDisplayFlags](#enum-HudDisplayFlags)
@@ -617,7 +621,9 @@
 | id_bhvYellowBall | 532 |
 | id_bhvYellowCoin | 533 |
 | id_bhvYoshi | 534 |
-| id_bhv_max_count | 535 |
+| id_RM_Scroll_Texture | 535 |
+| id_editor_Scroll_Texture | 536 |
+| id_bhv_max_count | 537 |
 
 [:arrow_up_small:](#)
 
@@ -809,7 +815,7 @@
 <br />
 
 ## [characters.h](#characters.h)
-- PALETTE_MAX
+- PALETTE_PRESET_MAX
 
 ### [enum CharacterSound](#CharacterSound)
 | Identifier | Value |
@@ -869,6 +875,17 @@
 | CT_WALUIGI | 3 |
 | CT_WARIO | 4 |
 | CT_MAX | 5 |
+
+### [enum PlayerParts](#PlayerParts)
+| Identifier | Value |
+| :--------- | :---- |
+| PANTS | 0 |
+| SHIRT | 1 |
+| GLOVES | 2 |
+| SHOES | 3 |
+| HAIR | 4 |
+| SKIN | 5 |
+| PLAYER_PART_MAX | 6 |
 
 [:arrow_up_small:](#)
 
@@ -1274,6 +1291,71 @@
 
 <br />
 
+## [level_update.h](#level_update.h)
+- MARIO_SPAWN_AIRBORNE
+- MARIO_SPAWN_AIRBORNE_DEATH
+- MARIO_SPAWN_AIRBORNE_STAR_COLLECT
+- MARIO_SPAWN_DEATH
+- MARIO_SPAWN_DOOR_WARP
+- MARIO_SPAWN_FLYING
+- MARIO_SPAWN_HARD_AIR_KNOCKBACK
+- MARIO_SPAWN_INSTANT_ACTIVE
+- MARIO_SPAWN_LAUNCH_DEATH
+- MARIO_SPAWN_LAUNCH_STAR_COLLECT
+- MARIO_SPAWN_PAINTING_DEATH
+- MARIO_SPAWN_PAINTING_STAR_COLLECT
+- MARIO_SPAWN_SPIN_AIRBORNE
+- MARIO_SPAWN_SPIN_AIRBORNE_CIRCLE
+- MARIO_SPAWN_SWIMMING
+- MARIO_SPAWN_TELEPORT
+- MARIO_SPAWN_UNKNOWN_02
+- MARIO_SPAWN_UNKNOWN_03
+- MARIO_SPAWN_UNKNOWN_27
+- TIMER_CONTROL_HIDE
+- TIMER_CONTROL_SHOW
+- TIMER_CONTROL_START
+- TIMER_CONTROL_STOP
+- WARP_OP_CREDITS_END
+- WARP_OP_CREDITS_NEXT
+- WARP_OP_CREDITS_START
+- WARP_OP_DEATH
+- WARP_OP_DEMO_END
+- WARP_OP_DEMO_NEXT
+- WARP_OP_EXIT
+- WARP_OP_FORCE_SYNC
+- WARP_OP_GAME_OVER
+- WARP_OP_LOOK_UP
+- WARP_OP_NONE
+- WARP_OP_SPIN_SHRINK
+- WARP_OP_STAR_EXIT
+- WARP_OP_TELEPORT
+- WARP_OP_TRIGGERS_LEVEL_SELECT
+- WARP_OP_WARP_DOOR
+- WARP_OP_WARP_FLOOR
+- WARP_OP_WARP_OBJECT
+- WARP_TYPE_CHANGE_AREA
+- WARP_TYPE_CHANGE_LEVEL
+- WARP_TYPE_NOT_WARPING
+- WARP_TYPE_SAME_AREA
+
+### [enum HUDDisplayFlag](#HUDDisplayFlag)
+| Identifier | Value |
+| :--------- | :---- |
+| HUD_DISPLAY_FLAG_LIVES | 0x0001 |
+| HUD_DISPLAY_FLAG_COIN_COUNT | 0x0002 |
+| HUD_DISPLAY_FLAG_STAR_COUNT | 0x0004 |
+| HUD_DISPLAY_FLAG_CAMERA_AND_POWER | 0x0008 |
+| HUD_DISPLAY_FLAG_KEYS | 0x0010 |
+| HUD_DISPLAY_FLAG_UNKNOWN_0020 | 0x0020 |
+| HUD_DISPLAY_FLAG_TIMER | 0x0040 |
+| HUD_DISPLAY_FLAG_EMPHASIZE_POWER | 0x8000 |
+| HUD_DISPLAY_NONE | 0x0000 |
+| HUD_DISPLAY_DEFAULT | HUD_DISPLAY_FLAG_LIVES | HUD_DISPLAY_FLAG_COIN_COUNT | HUD_DISPLAY_FLAG_STAR_COUNT | HUD_DISPLAY_FLAG_CAMERA_AND_POWER | HUD_DISPLAY_FLAG_KEYS | HUD_DISPLAY_FLAG_UNKNOWN_0020 |
+
+[:arrow_up_small:](#)
+
+<br />
+
 ## [mario_animation_ids.h](#mario_animation_ids.h)
 
 ### [enum MarioAnimID](#MarioAnimID)
@@ -1539,8 +1621,6 @@
 <br />
 
 ## [network.h](#network.h)
-- MAX_SYNC_OBJECTS
-- MAX_SYNC_OBJECT_FIELDS
 - PACKET_LENGTH
 - SYNC_DISTANCE_INFINITE
 
@@ -1567,6 +1647,7 @@
 - UNKNOWN_GLOBAL_INDEX
 - UNKNOWN_LOCAL_INDEX
 - UNKNOWN_NETWORK_INDEX
+- USE_REAL_PALETTE_VAR
 
 ### [enum NetworkPlayerType](#NetworkPlayerType)
 | Identifier | Value |
@@ -2758,6 +2839,13 @@
 
 ## [smlua_hooks.h](#smlua_hooks.h)
 
+### [enum LuaActionHookType](#LuaActionHookType)
+| Identifier | Value |
+| :--------- | :---- |
+| ACTION_HOOK_EVERY_FRAME | 0 |
+| ACTION_HOOK_GRAVITY | 1 |
+| ACTION_HOOK_MAX | 2 |
+
 ### [enum LuaHookedEventType](#LuaHookedEventType)
 | Identifier | Value |
 | :--------- | :---- |
@@ -2784,7 +2872,10 @@
 | HOOK_ON_OBJECT_RENDER | 20 |
 | HOOK_ON_DEATH | 21 |
 | HOOK_ON_PACKET_RECEIVE | 22 |
-| HOOK_MAX | 23 |
+| HOOK_USE_ACT_SELECT | 23 |
+| HOOK_ON_CHANGE_CAMERA_ANGLE | 24 |
+| HOOK_ON_SCREEN_TRANSITION | 25 |
+| HOOK_MAX | 26 |
 
 [:arrow_up_small:](#)
 
@@ -3840,6 +3931,7 @@
 - SURFACE_PAINTING_WOBBLE_D1
 - SURFACE_PAINTING_WOBBLE_D2
 - SURFACE_QUICKSAND
+- SURFACE_RAYCAST
 - SURFACE_SHALLOW_MOVING_QUICKSAND
 - SURFACE_SHALLOW_QUICKSAND
 - SURFACE_SLIPPERY

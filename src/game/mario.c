@@ -604,14 +604,32 @@ struct Surface *resolve_and_return_wall_collisions(Vec3f pos, f32 offset, f32 ra
     if (find_wall_collisions(&collisionData)) {
         wall = collisionData.walls[collisionData.numWalls - 1];
     }
-
+    
+    // I'm not sure if this code is actually ever used or not.
     pos[0] = collisionData.x;
     pos[1] = collisionData.y;
     pos[2] = collisionData.z;
 
-    // This only returns the most recent wall and can also return NULL
-    // there are no wall collisions.
     return wall;
+}
+
+/**
+ * Collides with walls and returns the wall collision data.
+ */
+void resolve_and_return_wall_collisions_data(Vec3f pos, f32 offset, f32 radius, struct WallCollisionData* collisionData) {
+    if (!collisionData || !pos) { return; }
+
+    collisionData->x = pos[0];
+    collisionData->y = pos[1];
+    collisionData->z = pos[2];
+    collisionData->radius = radius;
+    collisionData->offsetY = offset;
+
+    find_wall_collisions(collisionData);
+
+    pos[0] = collisionData->x;
+    pos[1] = collisionData->y;
+    pos[2] = collisionData->z;
 }
 
 /**
@@ -621,6 +639,20 @@ f32 vec3f_find_ceil(Vec3f pos, f32 height, struct Surface **ceil) {
     UNUSED f32 unused;
 
     return find_ceil(pos[0], height + 80.0f, pos[2], ceil);
+}
+
+/**
+ * Finds the ceiling from a vec3f horizontally and a height (with 80 vertical buffer).
+ * Prevents exposed ceiling bug
+ */
+// Prevent exposed ceilings
+f32 vec3f_mario_ceil(Vec3f pos, f32 height, struct Surface **ceil) {
+    if (gLevelValues.fixCollisionBugs) {
+        height = MAX(height + 80.0f, pos[1] - 2);
+        return find_ceil(pos[0], height, pos[2], ceil);
+    } else {
+        return vec3f_find_ceil(pos, height, ceil);
+    }
 }
 
 /**
@@ -1259,6 +1291,7 @@ s32 transition_submerged_to_walking(struct MarioState *m) {
  */
 s32 set_water_plunge_action(struct MarioState *m) {
     if (m->action == ACT_BUBBLED) { return FALSE; }
+    if (m->action == ACT_IN_CANNON) { return FALSE; }
 
     m->forwardVel = m->forwardVel / 4.0f;
     m->vel[1] = m->vel[1] / 2.0f;
@@ -1434,7 +1467,7 @@ copyPlayerGoto:;
         m->floorHeight = find_floor(m->pos[0], m->pos[1], m->pos[2], &m->floor);
     }
 
-    m->ceilHeight = vec3f_find_ceil(&m->pos[0], m->floorHeight, &m->ceil);
+    m->ceilHeight = vec3f_mario_ceil(&m->pos[0], m->floorHeight, &m->ceil);
     gasLevel = find_poison_gas_level(m->pos[0], m->pos[2]);
     m->waterLevel = find_water_level(m->pos[0], m->pos[2]);
 
@@ -1509,12 +1542,10 @@ void update_mario_inputs(struct MarioState *m) {
 
     debug_print_speed_action_normal(m);
 
-    /* Moonjump cheat */
-    while (Cheats.MoonJump == true && Cheats.EnableCheats == true && m->controller->buttonDown & L_TRIG ){
-        m->vel[1] = 25;
-        break;   // TODO: Unneeded break?
+    if (Cheats.enabled && Cheats.moonJump && m->controller->buttonDown & L_TRIG) {
+        m->faceAngle[1] = m->intendedYaw - approach_s32((s16)(m->intendedYaw - m->faceAngle[1]), 0, 0x800, 0x800);
+        m->vel[1] = 30;
     }
-    /*End of moonjump cheat */
 
     /* Developer stuff */
 #ifdef DEVELOPMENT
@@ -1841,7 +1872,7 @@ static void debug_update_mario_cap(u16 button, s32 flags, u16 capTimer, u16 capM
     }
 }
 
-void func_sh_8025574C(void) {
+void queue_particle_rumble(void) {
     if (gMarioState->particleFlags & PARTICLE_HORIZONTAL_STAR) {
         queue_rumble_data_mario(gMarioState, 5, 80);
     } else if (gMarioState->particleFlags & PARTICLE_VERTICAL_STAR) {
@@ -1849,7 +1880,7 @@ void func_sh_8025574C(void) {
     } else if (gMarioState->particleFlags & PARTICLE_TRIANGLE) {
         queue_rumble_data_mario(gMarioState, 5, 80);
     }
-    if(gMarioState->heldObj && gMarioState->heldObj->behavior == segmented_to_virtual(bhvBobomb)) {
+    if(gMarioState->heldObj && gMarioState->heldObj->behavior == segmented_to_virtual(smlua_override_behavior(bhvBobomb))) {
         reset_rumble_timers(gMarioState);
     }
 }
@@ -1959,22 +1990,13 @@ s32 execute_mario_action(UNUSED struct Object *o) {
         }
     }
 
-    /**
-    * Cheat stuff
-    */
-    if (Cheats.EnableCheats) {
-        if (Cheats.GodMode)
-            gMarioState->health = 0x880;
+    if (Cheats.enabled) {
+        if (Cheats.godMode) { gMarioState->health = 0x880; }
 
-        if (Cheats.InfiniteLives && gMarioState->numLives < 99)
-            gMarioState->numLives += 1;
+        if (Cheats.infiniteLives && gMarioState->numLives < 100) { gMarioState->numLives = 100; }
 
-        if (Cheats.SuperSpeed && gMarioState->controller->stickMag > 0.5f)
-            gMarioState->forwardVel += 100;
+        if (Cheats.superSpeed && gMarioState->controller->stickMag > 0.5f) { gMarioState->forwardVel += 100; }
     }
-    /**
-    * End of cheat stuff
-    */
 
     if (gMarioState->action) {
         if (gMarioState->action != ACT_BUBBLED) {
@@ -2089,7 +2111,7 @@ s32 execute_mario_action(UNUSED struct Object *o) {
 
         play_infinite_stairs_music();
         gMarioState->marioObj->oInteractStatus = 0;
-        func_sh_8025574C();
+        queue_particle_rumble();
 
         return gMarioState->particleFlags;
     }
@@ -2234,7 +2256,7 @@ static void init_mario_single_from_save_file(struct MarioState* m, u16 index) {
     m->numStars = save_file_get_total_star_count(gCurrSaveFileNum - 1, COURSE_MIN - 1, COURSE_MAX - 1);
     m->numKeys = 0;
 
-    m->numLives = 3;
+    m->numLives = 4;
     m->health = 0x880;
 
     m->prevNumStarsForDialog = m->numStars;
@@ -2258,5 +2280,25 @@ void set_mario_particle_flags(struct MarioState* m, u32 flags, u8 clear) {
         m->particleFlags &= ~flags;
     } else {
         m->particleFlags |= flags;
+    }
+}
+
+void mario_update_wall(struct MarioState* m, struct WallCollisionData* wcd) {
+    if (!m || !wcd) { return; }
+
+    m->wall = (wcd->numWalls > 0)
+        ? wcd->walls[wcd->numWalls - 1]
+        : NULL;
+
+    if (gLevelValues.fixCollisionBugs && wcd->normalCount > 0) {
+        vec3f_set(m->wallNormal,
+                  wcd->normalAddition[0] / wcd->normalCount,
+                  wcd->normalAddition[1] / wcd->normalCount,
+                  wcd->normalAddition[2] / wcd->normalCount);
+    } else if (m->wall) {
+        vec3f_set(m->wallNormal,
+                  m->wall->normal.x,
+                  m->wall->normal.y,
+                  m->wall->normal.z);
     }
 }

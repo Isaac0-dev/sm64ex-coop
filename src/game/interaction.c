@@ -29,6 +29,7 @@
 #include "pc/configfile.h"
 #include "pc/network/network.h"
 #include "pc/lua/smlua_hooks.h"
+#include "pc/cheats.h"
 
 enum InteractionFlag {
     INT_GROUND_POUND_OR_TWIRL      = (1 << 0), // 0x01
@@ -326,7 +327,7 @@ void mario_drop_held_object(struct MarioState *m) {
     if (m->playerIndex != 0) { return; }
 
     if (m->heldObj != NULL) {
-        if (m->heldObj->behavior == segmented_to_virtual(bhvKoopaShellUnderwater)) {
+        if (m->heldObj->behavior == segmented_to_virtual(smlua_override_behavior(bhvKoopaShellUnderwater))) {
             stop_shell_music();
         }
 
@@ -353,7 +354,7 @@ void mario_throw_held_object(struct MarioState *m) {
     if (m->playerIndex != 0) { return; }
 
     if (m->heldObj != NULL) {
-        if (m->heldObj->behavior == segmented_to_virtual(bhvKoopaShellUnderwater)) {
+        if (m->heldObj->behavior == segmented_to_virtual(smlua_override_behavior(bhvKoopaShellUnderwater))) {
             if (m->playerIndex == 0) { stop_shell_music(); }
         }
 
@@ -480,7 +481,7 @@ u32 mario_check_object_grab(struct MarioState *m) {
     if (m->input & INPUT_INTERACT_OBJ_GRABBABLE) {
         script = virtual_to_segmented(0x13, m->interactObj->behavior);
 
-        if (script == bhvBowser) {
+        if (script == smlua_override_behavior(bhvBowser)) {
             s16 facingDYaw = m->faceAngle[1] - m->interactObj->oMoveAngleYaw;
             if (facingDYaw >= -0x5555 && facingDYaw <= 0x5555) {
                 m->faceAngle[1] = m->interactObj->oMoveAngleYaw;
@@ -736,8 +737,12 @@ void push_mario_out_of_object(struct MarioState *m, struct Object *o, f32 paddin
         if (floor != NULL) {
             //! Doesn't update Mario's referenced floor (allows oob death when
             // an object pushes you into a steep slope while in a ground action)
+            //  <Fixed when gLevelValues.fixCollisionBugs != 0>
             m->pos[0] = newMarioX;
             m->pos[2] = newMarioZ;
+            if (gLevelValues.fixCollisionBugs) {
+                m->floorHeight = find_floor(m->pos[0], m->pos[1], m->pos[2], &m->floor);
+            }
         }
     }
 }
@@ -2038,7 +2043,7 @@ u32 interact_grabbable(struct MarioState *m, u32 interactType, struct Object *o)
         }
     }
 
-    if (script != bhvBowser) {
+    if (script != smlua_override_behavior(bhvBowser)) {
         push_mario_out_of_object(m, o, -5.0f);
     }
 
@@ -2138,7 +2143,9 @@ void check_kick_or_punch_wall(struct MarioState *m) {
         detector[2] = m->pos[2] + 50.0f * coss(m->faceAngle[1]);
         detector[1] = m->pos[1];
 
-        if (resolve_and_return_wall_collisions(detector, 80.0f, 5.0f) != NULL) {
+        struct WallCollisionData wcd = { 0 };
+        resolve_and_return_wall_collisions_data(detector, 80.0f, 5.0f, &wcd);
+        if (wcd.numWalls > 0) {
             if (m->action != ACT_MOVE_PUNCHING || m->forwardVel >= 0.0f) {
                 if (m->action == ACT_PUNCHING) {
                     m->action = ACT_MOVE_PUNCHING;
@@ -2243,7 +2250,7 @@ void check_death_barrier(struct MarioState *m) {
 }
 
 void check_lava_boost(struct MarioState *m) {
-    if (m->action == ACT_BUBBLED) { return; }
+    if (m->action == ACT_BUBBLED || (Cheats.enabled && Cheats.godMode)) { return; }
     if (!(m->action & ACT_FLAG_RIDING_SHELL) && m->pos[1] < m->floorHeight + 10.0f) {
         if (!(m->flags & MARIO_METAL_CAP)) {
             m->hurtCounter += (m->flags & MARIO_CAP_ON_HEAD) ? 12 : 18;

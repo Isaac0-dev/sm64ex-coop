@@ -37,6 +37,7 @@ struct StarPositions {
 };
 
 struct LevelValues {
+    u8 fixCollisionBugs;
     enum LevelNum entryLevel;
     enum LevelNum exitCastleLevel;
     s16 exitCastleArea;
@@ -52,6 +53,10 @@ struct LevelValues {
     u16 metalCapDurationCotmc;
     u16 vanishCapDurationVcutm;
     struct StarPositions starPositions;
+    s16 ceilHeightLimit;
+    s16 floorLowerLimit;
+    s16 floorLowerLimitMisc;
+    s16 floorLowerLimitShadow;
 };
 
 extern struct LevelValues gLevelValues;
@@ -70,6 +75,8 @@ struct BehaviorTrajectories {
     Trajectory* BowlingBallBobTrajectory;
     Trajectory* BowlingBallBob2Trajectory;
     Trajectory* BowlingBallTtmTrajectory;
+    Trajectory* BowlingBallThiLargeTrajectory;
+    Trajectory* BowlingBallThiSmallTrajectory;
     Trajectory* MipsTrajectory;
     Trajectory* Mips2Trajectory;
     Trajectory* Mips3Trajectory;
@@ -178,6 +185,16 @@ struct BehaviorDialogs {
     enum DialogId YoshiDialog;
 };
 
+#define STARS_NEEDED_FOR_DIALOG_COUNT 6
+struct StarsNeededForDialog {
+    u16 dialog1;
+    u16 dialog2;
+    u16 dialog3;
+    u16 dialog4;
+    u16 dialog5;
+    u16 dialog6;
+};
+
 struct BehaviorValues {
     f32 KoopaBobAgility;
     f32 KoopaCatchupAgility;
@@ -189,6 +206,20 @@ struct BehaviorValues {
     u16 ToadStar1Requirement;
     u16 ToadStar2Requirement;
     u16 ToadStar3Requirement;
+    f32 KingBobombFVel;
+    s16 KingBobombYawVel;
+    s16 KingBobombHealth;
+    s16 KingWhompHealth;
+    s16 MipsStar1Requirement;
+    s16 MipsStar2Requirement;
+    f32 BowlingBallBobSpeed;
+    f32 BowlingBallBob2Speed;
+    f32 BowlingBallTtmSpeed;
+    f32 BowlingBallThiLargeSpeed;
+    f32 BowlingBallThiSmallSpeed;
+    u16 GrateStarRequirement;
+    u8  ShowStarMilestones;
+    struct StarsNeededForDialog starsNeededForDialog;
     struct BehaviorDialogs dialogs;
     struct BehaviorTrajectories trajectories;
 };

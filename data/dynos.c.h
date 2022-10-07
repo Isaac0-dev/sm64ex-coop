@@ -4,6 +4,7 @@
 
 #include "dynos.h"
 #include "types.h"
+#include "engine/behavior_script.h"
 #include "src/game/moving_texture.h"
 
 void *dynos_swap_cmd(void *cmd);
@@ -16,8 +17,11 @@ s32   dynos_tex_import(void **output, void *ptr, s32 tile, void *grapi, void **h
 void  dynos_gfx_swap_animations(void *ptr);
 
 // -- warps -- //
+LevelScript* dynos_get_level_script(char* scriptEntryName);
+bool dynos_warp_to_warpnode(s32 aLevel, s32 aArea, s32 aAct, s32 aWarpId);
 bool dynos_warp_to_level(s32 aLevel, s32 aArea, s32 aAct);
 bool dynos_warp_restart_level(void);
+bool dynos_warp_to_start_level(void);
 bool dynos_warp_exit_level(s32 aDelay);
 bool dynos_warp_to_castle(s32 aLevel);
 
@@ -54,8 +58,15 @@ const char* dynos_level_get_token(u32 index);
 Trajectory* dynos_level_get_trajectory(const char* name);
 void dynos_level_load_background(void *ptr);
 
+// -- behaviors -- //
+void dynos_add_behavior(s32 modIndex, const char *filePath, const char *behaviorName);
+s32 dynos_behavior_get_active_mod_index(BehaviorScript *bhvScript);
+const char *dynos_behavior_get_token(BehaviorScript *bhvScript, u32 index);
+void dynos_behavior_hook_all_custom_behaviors(void);
+
 // -- other -- //
 void dynos_mod_shutdown(void);
+void dynos_add_scroll_target(u32 index, const char *name, u32 offset, u32 size);
 
 #endif
 #endif

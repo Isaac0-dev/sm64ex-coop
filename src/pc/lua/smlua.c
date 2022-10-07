@@ -6,6 +6,7 @@
 #include "pc/lua/utils/smlua_text_utils.h"
 #include "pc/lua/utils/smlua_audio_utils.h"
 #include "pc/lua/utils/smlua_model_utils.h"
+#include "pc/lua/utils/smlua_level_utils.h"
 #include "pc/djui/djui.h"
 
 lua_State* gLuaState = NULL;
@@ -131,10 +132,12 @@ void smlua_init(void) {
     // load libraries
     luaopen_base(L);
     //luaopen_coroutine(L);
-    //luaopen_debug(L);
-    //luaopen_io(L);
+#if defined(LUA_PROFILER)
+    luaL_requiref(L, "debug", luaopen_debug, 1);
+    luaL_requiref(L, "io", luaopen_io, 1);
+    luaL_requiref(L, "os", luaopen_os, 1);
+#endif
     luaL_requiref(L, "math", luaopen_math, 1);
-    //luaopen_os(L);
     //luaopen_package(L);
     luaL_requiref(L, "string", luaopen_string, 1);
     luaL_requiref(L, "table", luaopen_table, 1);
@@ -188,6 +191,7 @@ void smlua_shutdown(void) {
     smlua_cpointer_allowlist_shutdown();
     smlua_clear_hooks();
     smlua_model_util_reset();
+    smlua_level_util_reset();
     lua_State* L = gLuaState;
     if (L != NULL) {
         lua_close(L);

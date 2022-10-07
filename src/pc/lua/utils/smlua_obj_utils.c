@@ -35,7 +35,7 @@ static struct Object* spawn_object_internal(enum BehaviorId behaviorId, enum Mod
         return NULL;
     }
 
-    if (doSync && !network_set_sync_id(obj)) {
+    if (doSync && !sync_object_set_id(obj)) {
         obj->activeFlags = ACTIVE_FLAG_DEACTIVATED;
         LOG_ERROR("failed to set sync id");
         return NULL;
@@ -63,8 +63,8 @@ static struct Object* spawn_object_internal(enum BehaviorId behaviorId, enum Mod
         }
     }
 
-    if (doSync) {
-        struct SyncObject* so = &gSyncObjects[obj->oSyncID];
+    struct SyncObject* so = sync_object_get(obj->oSyncID);
+    if (doSync && so) {
         so->extendedModelId = modelId;
         so->o = obj;
 
@@ -86,7 +86,7 @@ struct Object* spawn_non_sync_object(enum BehaviorId behaviorId, enum ModelExten
 
 s32 obj_has_behavior_id(struct Object *o, enum BehaviorId behaviorId) {
     const BehaviorScript *behavior = get_behavior_from_id(behaviorId);
-    return o->behavior == behavior;
+    return o->behavior == smlua_override_behavior(behavior);
 }
 
 s32 obj_has_model_extended(struct Object *o, enum ModelExtendedId modelId) {
@@ -119,6 +119,7 @@ struct Object *obj_get_first(enum ObjectList objList) {
 
 struct Object *obj_get_first_with_behavior_id(enum BehaviorId behaviorId) {
     const BehaviorScript* behavior = get_behavior_from_id(behaviorId);
+    behavior = smlua_override_behavior(behavior);
     if (behavior) {
         enum ObjectList objList = get_object_list_from_behavior(behavior);
         for (struct Object *obj = obj_get_first(objList); obj != NULL; obj = obj_get_next(obj)) {
@@ -132,6 +133,7 @@ struct Object *obj_get_first_with_behavior_id(enum BehaviorId behaviorId) {
 
 struct Object *obj_get_first_with_behavior_id_and_field_s32(enum BehaviorId behaviorId, s32 fieldIndex, s32 value) {
     const BehaviorScript* behavior = get_behavior_from_id(behaviorId);
+    behavior = smlua_override_behavior(behavior);
     if (behavior) {
         enum ObjectList objList = get_object_list_from_behavior(behavior);
         for (struct Object *obj = obj_get_first(objList); obj != NULL; obj = obj_get_next(obj)) {
@@ -145,6 +147,7 @@ struct Object *obj_get_first_with_behavior_id_and_field_s32(enum BehaviorId beha
 
 struct Object *obj_get_first_with_behavior_id_and_field_f32(enum BehaviorId behaviorId, s32 fieldIndex, f32 value) {
     const BehaviorScript* behavior = get_behavior_from_id(behaviorId);
+    behavior = smlua_override_behavior(behavior);
     if (behavior) {
         enum ObjectList objList = get_object_list_from_behavior(behavior);
         for (struct Object *obj = obj_get_first(objList); obj != NULL; obj = obj_get_next(obj)) {
@@ -159,6 +162,7 @@ struct Object *obj_get_first_with_behavior_id_and_field_f32(enum BehaviorId beha
 struct Object *obj_get_nearest_object_with_behavior_id(struct Object *o, enum BehaviorId behaviorId) {
     f32 minDist = 0x20000;
     const BehaviorScript *behavior = get_behavior_from_id(behaviorId);
+    behavior = smlua_override_behavior(behavior);
     struct Object *closestObj = NULL;
     
     if (behavior) {
@@ -178,6 +182,7 @@ struct Object *obj_get_nearest_object_with_behavior_id(struct Object *o, enum Be
 
 s32 obj_count_objects_with_behavior_id(enum BehaviorId behaviorId) {
     const BehaviorScript *behavior = get_behavior_from_id(behaviorId);
+    behavior = smlua_override_behavior(behavior);
     s32 count = 0;
     
     if (behavior) {
@@ -255,20 +260,45 @@ struct ObjectHitbox* get_temp_object_hitbox(void) {
     return &sTmpHitbox;
 }
 
-s32 obj_is_valid_for_interaction(struct Object *o) {
+bool obj_is_valid_for_interaction(struct Object *o) {
     return o->activeFlags != ACTIVE_FLAG_DEACTIVATED && o->oIntangibleTimer == 0 && (o->oInteractStatus & INT_STATUS_INTERACTED) == 0;
 }
 
-s32 obj_check_hitbox_overlap(struct Object *o1, struct Object *o2) {
-    f32 r2 = sqr(max(o1->hitboxRadius, o1->hurtboxRadius) + max(o2->hitboxRadius, o2->hurtboxRadius));
+bool obj_check_hitbox_overlap(struct Object *o1, struct Object *o2) {
+    if (o1 == NULL || o2 == NULL) { return FALSE; }
+    
+    f32 o1H = max(o1->hitboxHeight, o1->hurtboxHeight);
+    f32 o1R = max(o1->hitboxRadius, o1->hurtboxRadius);
+    f32 o2H = max(o2->hitboxHeight, o2->hurtboxHeight);
+    f32 o2R = max(o2->hitboxRadius, o2->hurtboxRadius);
+    
+    f32 r2 = sqr(o1R + o2R);
     f32 d2 = sqr(o1->oPosX - o2->oPosX) + sqr(o1->oPosZ - o2->oPosZ);
     if (d2 > r2) return FALSE;
     f32 hb1lb = o1->oPosY - o1->hitboxDownOffset;
-    f32 hb1ub = hb1lb + max(o1->hitboxHeight, o1->hurtboxHeight);
+    f32 hb1ub = hb1lb + o1H;
     f32 hb2lb = o2->oPosY - o2->hitboxDownOffset;
-    f32 hb2ub = hb2lb + max(o2->hitboxHeight, o2->hurtboxHeight);
-    f32 hbsoh = max(o1->hitboxHeight, o1->hurtboxHeight) + max(o2->hitboxHeight, o2->hurtboxHeight);
-    if (hb2ub - hb1lb > hbsoh || hb1ub - hb2lb > hbsoh) return FALSE;
+    f32 hb2ub = hb2lb + o2H;
+    f32 hbsoh = o1H + o2H;
+    if ((hb2ub - hb1lb) > hbsoh || (hb1ub - hb2lb) > hbsoh) return FALSE;
+    return TRUE;
+}
+
+bool obj_check_overlap_with_hitbox_params(struct Object *o, f32 x, f32 y, f32 z, f32 h, f32 r, f32 d) {
+    if (o == NULL) { return FALSE; }
+    
+    f32 oH = max(o->hitboxHeight, o->hurtboxHeight);
+    f32 oR = max(o->hitboxRadius, o->hurtboxRadius);
+    
+    f32 r2 = sqr(oR + r);
+    f32 d2 = sqr(o->oPosX - x) + sqr(o->oPosZ - z);
+    if (d2 > r2) return FALSE;
+    f32 hb1lb = o->oPosY - o->hitboxDownOffset;
+    f32 hb1ub = hb1lb + oH;
+    f32 hb2lb = y - d;
+    f32 hb2ub = hb2lb + h;
+    f32 hbsoh = oH + h;
+    if ((hb2ub - hb1lb) > hbsoh || (hb1ub - hb2lb) > hbsoh) return FALSE;
     return TRUE;
 }
 

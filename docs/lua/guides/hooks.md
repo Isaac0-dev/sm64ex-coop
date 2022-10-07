@@ -109,6 +109,9 @@ The lua functions sent to `hook_event()` will be automatically called by SM64 wh
 | HOOK_ON_OBJECT_RENDER | Called right before an object is rendered. **Note:** You must set the `hookRender` field of the object to a non-zero value | [Object](structs.md#Object) renderedObj |
 | HOOK_ON_DEATH | Called when the local player dies, return `false` to prevent normal death sequence | [MarioState](structs.md#MarioState) localMario |
 | HOOK_ON_PACKET_RECEIVE | Called when the mod receives a packet that used `network_send()` or `network_send_to()` | `table` dataTable |
+| HOOK_USE_ACT_SELECT | Called when the level changes, return `true` to show act selection screen and `false` otherwise | `integer` levelNum |
+| HOOK_ON_CHANGE_CAMERA_ANGLE | Called when the player changes the camera mode to Lakitu cam or Mario cam, return `false` to prevent the change. | `integer` mode |
+| HOOK_ON_SCREEN_TRANSITION | Called when the game is about to play a transition, returun `false` to prevent the transition from playing. | `integer` type |
 
 ### Parameters
 
@@ -140,8 +143,15 @@ hook_event(HOOK_MARIO_UPDATE, mario_update)
 | Field | Type |
 | ----- | ---- |
 | action_id | `integer` |
-| func | `Lua Function` ([MarioState](structs.md#MarioState) m) |
+| func | Table with entries for [Action Hook Types](#action-hook-types) of `Lua Function` ([MarioState](structs.md#MarioState) m) |
 | interaction_type | [enum InteractionFlag](constants.md#enum-InteractionFlag) <optional> |
+
+#### [Action Hook Types](#action-hook-types)
+
+| Type | Description | Returns |
+| :--- | :---------- | :------ |
+| every_frame | Main action code, called once per frame | `true` if action cancelled, else `false` |
+| gravity | Called inside `apply_gravity` when in action | Unused |
 
 ### Lua Example
 
@@ -182,10 +192,15 @@ function act_wall_slide(m)
         return set_mario_action(m, ACT_FREEFALL, 0)
     end
 
-    -- gravity
-    m.vel.y = m.vel.y + 2
-
     return 0
+end
+
+function act_wall_slide_gravity(m)
+    m.vel.y = m.vel.y - 2
+
+    if m.vel.y < -15 then
+        m.vel.y = -15
+    end
 end
 
 function mario_on_set_action(m)
@@ -197,7 +212,7 @@ function mario_on_set_action(m)
 end
 
 hook_event(HOOK_ON_SET_MARIO_ACTION, mario_on_set_action)
-hook_mario_action(ACT_WALL_SLIDE, act_wall_slide)
+hook_mario_action(ACT_WALL_SLIDE, { every_frame = act_wall_slide, gravity = act_wall_slide_gravity } )
 ```
 
 [:arrow_up_small:](#)

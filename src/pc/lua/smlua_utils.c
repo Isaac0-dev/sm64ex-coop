@@ -12,6 +12,10 @@ static u8 sVec3fBufferIndex = 0;
 static Vec3s sVec3sBuffer[VEC3S_BUFFER_COUNT] = { 0 };
 static u8 sVec3sBufferIndex = 0;
 
+#define COLOR_BUFFER_COUNT 64
+static Color sColorBuffer[COLOR_BUFFER_COUNT] = { 0 };
+static u8 sColorBufferIndex = 0;
+
 f32* smlua_get_vec3f_from_buffer(void) {
     if (sVec3fBufferIndex >= VEC3F_BUFFER_COUNT) { sVec3fBufferIndex = 0; }
     return sVec3fBuffer[sVec3fBufferIndex++];
@@ -20,6 +24,11 @@ f32* smlua_get_vec3f_from_buffer(void) {
 s16* smlua_get_vec3s_from_buffer(void) {
     if (sVec3sBufferIndex >= VEC3S_BUFFER_COUNT) { sVec3sBufferIndex = 0; }
     return sVec3sBuffer[sVec3sBufferIndex++];
+}
+
+u8* smlua_get_color_from_buffer(void) {
+    if (sColorBufferIndex >= COLOR_BUFFER_COUNT) { sColorBufferIndex = 0; }
+    return sColorBuffer[sColorBufferIndex++];
 }
 
 f32 *smlua_get_vec3f_for_play_sound(f32 *pos) {
@@ -496,10 +505,27 @@ lua_Number smlua_get_number_field(int index, char* name) {
     return val;
 }
 
+LuaFunction smlua_get_function_field(int index, char *name) {
+    if (lua_type(gLuaState, index) != LUA_TTABLE) {
+        LOG_LUA_LINE("smlua_get_function_field received improper type '%d'", lua_type(gLuaState, index));
+        gSmLuaConvertSuccess = false;
+        return 0;
+    }
+    lua_getfield(gLuaState, index, name);
+    LuaFunction val = smlua_to_lua_function(gLuaState, -1);
+    lua_pop(gLuaState, 1);
+    return val;
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-s64 smlua_get_mod_variable(u16 modIndex, const char* variable) {
+s64 smlua_get_integer_mod_variable(u16 modIndex, const char* variable) {
     lua_State* L = gLuaState;
+
+    if (!gActiveMods.entries) {
+        LOG_ERROR("Could not find mod list entries");
+        return 0;
+    }
 
     // figure out entry
     struct Mod* mod = gActiveMods.entries[modIndex];
@@ -507,18 +533,22 @@ s64 smlua_get_mod_variable(u16 modIndex, const char* variable) {
         LOG_ERROR("Could not find mod list entry for modIndex: %u", modIndex);
         return 0;
     }
+    
+    u8 prevSuppress = gSmLuaSuppressErrors;
 
     int prevTop = lua_gettop(L);
     lua_getglobal(L, "_G"); // get global table
     lua_getfield(L, LUA_REGISTRYINDEX, mod->relativePath); // get the file's "global" table
+    gSmLuaSuppressErrors = true;
     s64 value = smlua_get_integer_field(-1, (char*)variable);
     lua_settop(L, prevTop);
 
     // return variable
+    gSmLuaSuppressErrors = prevSuppress;
     return value;
 }
 
-s64 smlua_get_any_mod_variable(const char* variable) {
+s64 smlua_get_any_integer_mod_variable(const char* variable) {
     lua_State* L = gLuaState;
     u8 prevSuppress = gSmLuaSuppressErrors;
 
@@ -532,6 +562,57 @@ s64 smlua_get_any_mod_variable(const char* variable) {
         lua_getfield(L, LUA_REGISTRYINDEX, mod->relativePath); // get the file's "global" table
         gSmLuaSuppressErrors = true;
         value = smlua_get_integer_field(-1, (char*)variable);
+        lua_settop(L, prevTop);
+
+        if (gSmLuaConvertSuccess) {
+            gSmLuaSuppressErrors = prevSuppress;
+            return value;
+        }
+    }
+
+    // return variable
+    gSmLuaSuppressErrors = prevSuppress;
+    return value;
+}
+
+LuaFunction smlua_get_function_mod_variable(u16 modIndex, const char *variable) {
+    lua_State *L = gLuaState;
+
+    // figure out entry
+    struct Mod *mod = gActiveMods.entries[modIndex];
+    if (mod == NULL) {
+        LOG_ERROR("Could not find mod list entry for modIndex: %u", modIndex);
+        return 0;
+    }
+    
+    u8 prevSuppress = gSmLuaSuppressErrors;
+
+    int prevTop = lua_gettop(L);
+    lua_getglobal(L, "_G"); // get global table
+    lua_getfield(L, LUA_REGISTRYINDEX, mod->relativePath); // get the file's "global" table
+    gSmLuaSuppressErrors = true;
+    LuaFunction value = smlua_get_function_field(-1, (char *)variable);
+    lua_settop(L, prevTop);
+
+    // return variable
+    gSmLuaSuppressErrors = prevSuppress;
+    return value;
+}
+
+LuaFunction smlua_get_any_function_mod_variable(const char *variable) {
+    lua_State *L = gLuaState;
+    u8 prevSuppress = gSmLuaSuppressErrors;
+
+    LuaFunction value = 0;
+    for (s32 i = 0; i < gActiveMods.entryCount; i++) {
+        // figure out entry
+        struct Mod *mod = gActiveMods.entries[i];
+
+        int prevTop = lua_gettop(L);
+        lua_getglobal(L, "_G"); // get global table
+        lua_getfield(L, LUA_REGISTRYINDEX, mod->relativePath); // get the file's "global" table
+        gSmLuaSuppressErrors = true;
+        value = smlua_get_function_field(-1, (char *)variable);
         lua_settop(L, prevTop);
 
         if (gSmLuaConvertSuccess) {

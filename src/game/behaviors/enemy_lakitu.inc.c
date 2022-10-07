@@ -2,7 +2,7 @@
 /**
  * Behavior for bhvEnemyLakitu.
  * Lakitu comes before it spawned spinies in processing order.
- * TODO: bhvCloud processing oredr
+ * TODO: bhvCloud processing order
  */
 
 /**
@@ -24,11 +24,16 @@ static struct ObjectHitbox sEnemyLakituHitbox = {
  * Wait for mario to approach, then spawn the cloud and become visible.
  */
 static void enemy_lakitu_act_uninitialized(void) {
-    spawn_object_relative_with_scale(CLOUD_BP_LAKITU_CLOUD, 0, 0, 0, 2.0f, o, MODEL_MIST, bhvCloud);
+    struct Object *player = nearest_player_to_object(o);
+    s32 distanceToPlayer = dist_between_objects(o, player);
 
-    cur_obj_unhide();
-    o->oAction = ENEMY_LAKITU_ACT_MAIN;
-}
+    if (distanceToPlayer < 2000.0f) {
+        spawn_object_relative_with_scale(CLOUD_BP_LAKITU_CLOUD, 0, 0, 0, 2.0f, o, MODEL_MIST, bhvCloud);
+
+        cur_obj_unhide();
+        o->oAction = ENEMY_LAKITU_ACT_MAIN;
+    }
+}   
 
 /**
  * Accelerate toward mario vertically.
@@ -127,7 +132,7 @@ static void enemy_lakitu_sub_act_no_spiny(void) {
                 o->oEnemyLakituSpinyCooldown = 30;
                 network_send_object(o);
 
-                network_set_sync_id(spiny);
+                sync_object_set_id(spiny);
                 struct Object* spawn_objects[] = { spiny };
                 u32 models[] = { MODEL_SPINY_BALL };
                 network_send_spawn_objects(spawn_objects, models, 1);
@@ -199,7 +204,7 @@ static void enemy_lakitu_act_main(void) {
     obj_update_blinking(&o->oEnemyLakituBlinkTimer, 20, 40, 4);
 
     if (o->prevObj != NULL) {
-        if (o->prevObj->behavior != bhvSpiny || o->prevObj->activeFlags == ACTIVE_FLAG_DEACTIVATED) {
+        if (o->prevObj->behavior != smlua_override_behavior(bhvSpiny) || o->prevObj->activeFlags == ACTIVE_FLAG_DEACTIVATED) {
             o->prevObj = NULL;
         }
     }
@@ -234,11 +239,11 @@ static void enemy_lakitu_act_main(void) {
  */
 void bhv_enemy_lakitu_update(void) {
     // PARTIAL_UPDATE
-    if (!network_sync_object_initialized(o)) {
-        network_init_object(o, 4000.0f);
-        network_init_object_field(o, &o->oEnemyLakituBlinkTimer);
-        network_init_object_field(o, &o->oEnemyLakituSpinyCooldown);
-        network_init_object_field(o, &o->oEnemyLakituFaceForwardCountdown);
+    if (!sync_object_is_initialized(o->oSyncID)) {
+        sync_object_init(o, 4000.0f);
+        sync_object_init_field(o, &o->oEnemyLakituBlinkTimer);
+        sync_object_init_field(o, &o->oEnemyLakituSpinyCooldown);
+        sync_object_init_field(o, &o->oEnemyLakituFaceForwardCountdown);
     }
 
     treat_far_home_as_mario(2000.0f, NULL, NULL);

@@ -17,6 +17,9 @@
 #include "game/game_init.h"
 #include "engine/math_util.h"
 #include "game/level_update.h"
+#include "game/hardcoded.h"
+#include "pc/network/network.h"
+#include "pc/lua/smlua_hooks.h"
 
 s32 unused8038BE90;
 
@@ -151,7 +154,11 @@ static void add_surface_to_cell(s16 dynamic, s16 cellX, s16 cellZ, struct Surfac
     //  many functions only use the first triangle in surface order that fits,
     //  missing higher surfaces.
     //  upperY would be a better sort method.
-    surfacePriority = surface->vertex1[1] * sortDir;
+    //  <Fixed when gLevelValues.fixCollisionBugs != 0>
+
+    surfacePriority = gLevelValues.fixCollisionBugs
+                    ? (surface->upperY * sortDir)
+                    : (surface->vertex1[1] * sortDir);
 
     newNode->surface = surface;
 
@@ -437,9 +444,11 @@ static s32 surf_has_no_cam_collision(s16 surfaceType) {
     s32 flags = 0;
 
     switch (surfaceType) {
+        case SURFACE_RAYCAST:
         case SURFACE_NO_CAM_COLLISION:
         case SURFACE_NO_CAM_COLLISION_77: // Unused
         case SURFACE_NO_CAM_COL_VERY_SLIPPERY:
+        case SURFACE_VANISH_CAP_WALLS:
         case SURFACE_SWITCH:
             flags = SURFACE_FLAG_NO_CAM_COLLISION;
             break;
@@ -739,7 +748,7 @@ void load_object_surfaces(s16** data, s16* vertexData) {
 
     // The DDD warp is initially loaded at the origin and moved to the proper
     // position in paintings.c and doesn't update its room, so set it here.
-    if (gCurrentObject->behavior == segmented_to_virtual(bhvDddWarp)) {
+    if (gCurrentObject->behavior == segmented_to_virtual(smlua_override_behavior(bhvDddWarp))) {
         room = 5;
     } else {
         room = 0;

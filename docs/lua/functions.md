@@ -583,6 +583,7 @@
    - [spawn_wind_particles](functions-2.md#spawn_wind_particles)
    - [tox_box_move](functions-2.md#tox_box_move)
    - [update_angle_from_move_flags](functions-2.md#update_angle_from_move_flags)
+   - [uv_update_scroll](functions-2.md#uv_update_scroll)
    - [vec3f_copy_2](functions-2.md#vec3f_copy_2)
 
 <br />
@@ -614,6 +615,7 @@
    - [camera_approach_s16_symmetric_bool](functions-3.md#camera_approach_s16_symmetric_bool)
    - [camera_course_processing](functions-3.md#camera_course_processing)
    - [camera_set_use_course_specific_settings](functions-3.md#camera_set_use_course_specific_settings)
+   - [center_rom_hack_camera](functions-3.md#center_rom_hack_camera)
    - [clamp_pitch](functions-3.md#clamp_pitch)
    - [clamp_positions_and_find_yaw](functions-3.md#clamp_positions_and_find_yaw)
    - [collide_with_walls](functions-3.md#collide_with_walls)
@@ -648,6 +650,7 @@
    - [random_vec3s](functions-3.md#random_vec3s)
    - [reset_camera](functions-3.md#reset_camera)
    - [resolve_geometry_collisions](functions-3.md#resolve_geometry_collisions)
+   - [rom_hack_cam_set_collisions](functions-3.md#rom_hack_cam_set_collisions)
    - [rotate_camera_around_walls](functions-3.md#rotate_camera_around_walls)
    - [rotate_in_xz](functions-3.md#rotate_in_xz)
    - [rotate_in_yz](functions-3.md#rotate_in_yz)
@@ -748,6 +751,10 @@
    - [seq_player_fade_out](functions-3.md#seq_player_fade_out)
    - [seq_player_lower_volume](functions-3.md#seq_player_lower_volume)
    - [seq_player_unlower_volume](functions-3.md#seq_player_unlower_volume)
+   - [stop_background_music](functions-3.md#stop_background_music)
+   - [stop_sound](functions-3.md#stop_sound)
+   - [stop_sounds_from_source](functions-3.md#stop_sounds_from_source)
+   - [stop_sounds_in_continuous_banks](functions-3.md#stop_sounds_in_continuous_banks)
 
 <br />
 
@@ -781,6 +788,11 @@
 
 <br />
 
+- level_update.h
+   - [level_trigger_warp](functions-3.md#level_trigger_warp)
+
+<br />
+
 - mario.h
    - [adjust_sound_for_speed](functions-3.md#adjust_sound_for_speed)
    - [check_common_action_exits](functions-3.md#check_common_action_exits)
@@ -805,6 +817,7 @@
    - [mario_get_terrain_sound_addend](functions-3.md#mario_get_terrain_sound_addend)
    - [mario_set_bubbled](functions-3.md#mario_set_bubbled)
    - [mario_set_forward_vel](functions-3.md#mario_set_forward_vel)
+   - [mario_update_wall](functions-3.md#mario_update_wall)
    - [play_mario_action_sound](functions-3.md#play_mario_action_sound)
    - [play_mario_heavy_landing_sound](functions-3.md#play_mario_heavy_landing_sound)
    - [play_mario_heavy_landing_sound_once](functions-3.md#play_mario_heavy_landing_sound_once)
@@ -815,6 +828,7 @@
    - [play_sound_and_spawn_particles](functions-3.md#play_sound_and_spawn_particles)
    - [play_sound_if_no_flag](functions-3.md#play_sound_if_no_flag)
    - [resolve_and_return_wall_collisions](functions-3.md#resolve_and_return_wall_collisions)
+   - [resolve_and_return_wall_collisions_data](functions-3.md#resolve_and_return_wall_collisions_data)
    - [return_mario_anim_y_translation](functions-3.md#return_mario_anim_y_translation)
    - [set_anim_to_frame](functions-3.md#set_anim_to_frame)
    - [set_jump_from_landing](functions-3.md#set_jump_from_landing)
@@ -983,19 +997,49 @@
 
 <br />
 
+- math_util.h
+   - [anim_spline_poll](functions-3.md#anim_spline_poll)
+   - [approach_f32](functions-3.md#approach_f32)
+   - [approach_s32](functions-3.md#approach_s32)
+   - [not_zero](functions-3.md#not_zero)
+   - [vec3f_combine](functions-3.md#vec3f_combine)
+   - [vec3f_dist](functions-3.md#vec3f_dist)
+   - [vec3f_dot](functions-3.md#vec3f_dot)
+   - [vec3f_get_dist_and_angle](functions-3.md#vec3f_get_dist_and_angle)
+   - [vec3f_length](functions-3.md#vec3f_length)
+   - [vec3f_project](functions-3.md#vec3f_project)
+   - [vec3f_set_dist_and_angle](functions-3.md#vec3f_set_dist_and_angle)
+
+<br />
+
+- misc.h
+   - [update_all_mario_stars](functions-3.md#update_all_mario_stars)
+
+<br />
+
+- mod_storage.h
+   - [mod_storage_load](functions-3.md#mod_storage_load)
+   - [mod_storage_save](functions-3.md#mod_storage_save)
+
+<br />
+
 - network_player.h
    - [get_network_player_from_area](functions-3.md#get_network_player_from_area)
    - [get_network_player_from_level](functions-3.md#get_network_player_from_level)
    - [get_network_player_smallest_global](functions-3.md#get_network_player_smallest_global)
+   - [network_player_color_to_palette](functions-3.md#network_player_color_to_palette)
    - [network_player_connected_count](functions-3.md#network_player_connected_count)
    - [network_player_from_global_index](functions-3.md#network_player_from_global_index)
+   - [network_player_palette_to_color](functions-3.md#network_player_palette_to_color)
    - [network_player_set_description](functions-3.md#network_player_set_description)
 
 <br />
 
 - network_utils.h
+   - [network_discord_id_from_local_index](functions-3.md#network_discord_id_from_local_index)
    - [network_get_player_text_color_string](functions-3.md#network_get_player_text_color_string)
    - [network_global_index_from_local](functions-3.md#network_global_index_from_local)
+   - [network_is_moderator](functions-3.md#network_is_moderator)
    - [network_is_server](functions-3.md#network_is_server)
    - [network_local_index_from_global](functions-3.md#network_local_index_from_global)
 
@@ -1042,52 +1086,52 @@
 <br />
 
 - obj_behaviors_2.c
-   - [approach_f32_ptr](functions-3.md#approach_f32_ptr)
-   - [cur_obj_init_anim_and_check_if_end](functions-3.md#cur_obj_init_anim_and_check_if_end)
-   - [cur_obj_init_anim_check_frame](functions-3.md#cur_obj_init_anim_check_frame)
-   - [cur_obj_init_anim_extend](functions-3.md#cur_obj_init_anim_extend)
-   - [cur_obj_play_sound_at_anim_range](functions-3.md#cur_obj_play_sound_at_anim_range)
-   - [cur_obj_set_anim_if_at_end](functions-3.md#cur_obj_set_anim_if_at_end)
-   - [cur_obj_spin_all_dimensions](functions-3.md#cur_obj_spin_all_dimensions)
-   - [obj_act_knockback](functions-3.md#obj_act_knockback)
-   - [obj_act_squished](functions-3.md#obj_act_squished)
-   - [obj_bounce_off_walls_edges_objects](functions-3.md#obj_bounce_off_walls_edges_objects)
-   - [obj_check_attacks](functions-3.md#obj_check_attacks)
-   - [obj_compute_vel_from_move_pitch](functions-3.md#obj_compute_vel_from_move_pitch)
-   - [obj_die_if_above_lava_and_health_non_positive](functions-3.md#obj_die_if_above_lava_and_health_non_positive)
-   - [obj_die_if_health_non_positive](functions-3.md#obj_die_if_health_non_positive)
-   - [obj_face_pitch_approach](functions-3.md#obj_face_pitch_approach)
-   - [obj_face_roll_approach](functions-3.md#obj_face_roll_approach)
-   - [obj_face_yaw_approach](functions-3.md#obj_face_yaw_approach)
-   - [obj_forward_vel_approach](functions-3.md#obj_forward_vel_approach)
-   - [obj_get_pitch_from_vel](functions-3.md#obj_get_pitch_from_vel)
-   - [obj_get_pitch_to_home](functions-3.md#obj_get_pitch_to_home)
-   - [obj_grow_then_shrink](functions-3.md#obj_grow_then_shrink)
-   - [obj_handle_attacks](functions-3.md#obj_handle_attacks)
-   - [obj_is_near_to_and_facing_mario](functions-3.md#obj_is_near_to_and_facing_mario)
-   - [obj_is_rendering_enabled](functions-3.md#obj_is_rendering_enabled)
-   - [obj_move_for_one_second](functions-3.md#obj_move_for_one_second)
-   - [obj_move_pitch_approach](functions-3.md#obj_move_pitch_approach)
-   - [obj_random_fixed_turn](functions-3.md#obj_random_fixed_turn)
-   - [obj_resolve_collisions_and_turn](functions-3.md#obj_resolve_collisions_and_turn)
-   - [obj_resolve_object_collisions](functions-3.md#obj_resolve_object_collisions)
-   - [obj_roll_to_match_yaw_turn](functions-3.md#obj_roll_to_match_yaw_turn)
-   - [obj_rotate_yaw_and_bounce_off_walls](functions-3.md#obj_rotate_yaw_and_bounce_off_walls)
-   - [obj_set_dist_from_home](functions-3.md#obj_set_dist_from_home)
-   - [obj_set_knockback_action](functions-3.md#obj_set_knockback_action)
-   - [obj_set_squished_action](functions-3.md#obj_set_squished_action)
-   - [obj_smooth_turn](functions-3.md#obj_smooth_turn)
-   - [obj_spit_fire](functions-3.md#obj_spit_fire)
-   - [obj_turn_pitch_toward_mario](functions-3.md#obj_turn_pitch_toward_mario)
-   - [obj_unused_die](functions-3.md#obj_unused_die)
-   - [obj_update_blinking](functions-3.md#obj_update_blinking)
-   - [obj_update_standard_actions](functions-3.md#obj_update_standard_actions)
-   - [obj_y_vel_approach](functions-3.md#obj_y_vel_approach)
-   - [oscillate_toward](functions-3.md#oscillate_toward)
-   - [platform_on_track_update_pos_or_spawn_ball](functions-3.md#platform_on_track_update_pos_or_spawn_ball)
-   - [random_linear_offset](functions-3.md#random_linear_offset)
-   - [random_mod_offset](functions-3.md#random_mod_offset)
-   - [treat_far_home_as_mario](functions-3.md#treat_far_home_as_mario)
+   - [approach_f32_ptr](functions-4.md#approach_f32_ptr)
+   - [cur_obj_init_anim_and_check_if_end](functions-4.md#cur_obj_init_anim_and_check_if_end)
+   - [cur_obj_init_anim_check_frame](functions-4.md#cur_obj_init_anim_check_frame)
+   - [cur_obj_init_anim_extend](functions-4.md#cur_obj_init_anim_extend)
+   - [cur_obj_play_sound_at_anim_range](functions-4.md#cur_obj_play_sound_at_anim_range)
+   - [cur_obj_set_anim_if_at_end](functions-4.md#cur_obj_set_anim_if_at_end)
+   - [cur_obj_spin_all_dimensions](functions-4.md#cur_obj_spin_all_dimensions)
+   - [obj_act_knockback](functions-4.md#obj_act_knockback)
+   - [obj_act_squished](functions-4.md#obj_act_squished)
+   - [obj_bounce_off_walls_edges_objects](functions-4.md#obj_bounce_off_walls_edges_objects)
+   - [obj_check_attacks](functions-4.md#obj_check_attacks)
+   - [obj_compute_vel_from_move_pitch](functions-4.md#obj_compute_vel_from_move_pitch)
+   - [obj_die_if_above_lava_and_health_non_positive](functions-4.md#obj_die_if_above_lava_and_health_non_positive)
+   - [obj_die_if_health_non_positive](functions-4.md#obj_die_if_health_non_positive)
+   - [obj_face_pitch_approach](functions-4.md#obj_face_pitch_approach)
+   - [obj_face_roll_approach](functions-4.md#obj_face_roll_approach)
+   - [obj_face_yaw_approach](functions-4.md#obj_face_yaw_approach)
+   - [obj_forward_vel_approach](functions-4.md#obj_forward_vel_approach)
+   - [obj_get_pitch_from_vel](functions-4.md#obj_get_pitch_from_vel)
+   - [obj_get_pitch_to_home](functions-4.md#obj_get_pitch_to_home)
+   - [obj_grow_then_shrink](functions-4.md#obj_grow_then_shrink)
+   - [obj_handle_attacks](functions-4.md#obj_handle_attacks)
+   - [obj_is_near_to_and_facing_mario](functions-4.md#obj_is_near_to_and_facing_mario)
+   - [obj_is_rendering_enabled](functions-4.md#obj_is_rendering_enabled)
+   - [obj_move_for_one_second](functions-4.md#obj_move_for_one_second)
+   - [obj_move_pitch_approach](functions-4.md#obj_move_pitch_approach)
+   - [obj_random_fixed_turn](functions-4.md#obj_random_fixed_turn)
+   - [obj_resolve_collisions_and_turn](functions-4.md#obj_resolve_collisions_and_turn)
+   - [obj_resolve_object_collisions](functions-4.md#obj_resolve_object_collisions)
+   - [obj_roll_to_match_yaw_turn](functions-4.md#obj_roll_to_match_yaw_turn)
+   - [obj_rotate_yaw_and_bounce_off_walls](functions-4.md#obj_rotate_yaw_and_bounce_off_walls)
+   - [obj_set_dist_from_home](functions-4.md#obj_set_dist_from_home)
+   - [obj_set_knockback_action](functions-4.md#obj_set_knockback_action)
+   - [obj_set_squished_action](functions-4.md#obj_set_squished_action)
+   - [obj_smooth_turn](functions-4.md#obj_smooth_turn)
+   - [obj_spit_fire](functions-4.md#obj_spit_fire)
+   - [obj_turn_pitch_toward_mario](functions-4.md#obj_turn_pitch_toward_mario)
+   - [obj_unused_die](functions-4.md#obj_unused_die)
+   - [obj_update_blinking](functions-4.md#obj_update_blinking)
+   - [obj_update_standard_actions](functions-4.md#obj_update_standard_actions)
+   - [obj_y_vel_approach](functions-4.md#obj_y_vel_approach)
+   - [oscillate_toward](functions-4.md#oscillate_toward)
+   - [platform_on_track_update_pos_or_spawn_ball](functions-4.md#platform_on_track_update_pos_or_spawn_ball)
+   - [random_linear_offset](functions-4.md#random_linear_offset)
+   - [random_mod_offset](functions-4.md#random_mod_offset)
+   - [treat_far_home_as_mario](functions-4.md#treat_far_home_as_mario)
 
 <br />
 
@@ -1194,6 +1238,7 @@
    - [cur_obj_set_face_angle_to_move_angle](functions-4.md#cur_obj_set_face_angle_to_move_angle)
    - [cur_obj_set_hitbox_and_die_if_attacked](functions-4.md#cur_obj_set_hitbox_and_die_if_attacked)
    - [cur_obj_set_hitbox_radius_and_height](functions-4.md#cur_obj_set_hitbox_radius_and_height)
+   - [cur_obj_set_home_once](functions-4.md#cur_obj_set_home_once)
    - [cur_obj_set_hurtbox_radius_and_height](functions-4.md#cur_obj_set_hurtbox_radius_and_height)
    - [cur_obj_set_pos_relative](functions-4.md#cur_obj_set_pos_relative)
    - [cur_obj_set_pos_relative_to_parent](functions-4.md#cur_obj_set_pos_relative_to_parent)
@@ -1321,6 +1366,7 @@
 
 - save_file.h
    - [save_file_clear_flags](functions-4.md#save_file_clear_flags)
+   - [save_file_erase_current_backup_save](functions-4.md#save_file_erase_current_backup_save)
    - [save_file_get_cap_pos](functions-4.md#save_file_get_cap_pos)
    - [save_file_get_course_coin_score](functions-4.md#save_file_get_course_coin_score)
    - [save_file_get_course_star_count](functions-4.md#save_file_get_course_star_count)
@@ -1329,7 +1375,9 @@
    - [save_file_get_sound_mode](functions-4.md#save_file_get_sound_mode)
    - [save_file_get_star_flags](functions-4.md#save_file_get_star_flags)
    - [save_file_get_total_star_count](functions-4.md#save_file_get_total_star_count)
+   - [save_file_reload](functions-4.md#save_file_reload)
    - [save_file_set_flags](functions-4.md#save_file_set_flags)
+   - [save_file_set_star_flags](functions-4.md#save_file_set_star_flags)
 
 <br />
 
@@ -1366,7 +1414,21 @@
 
 <br />
 
+- smlua_level_utils.h
+   - [level_register](functions-4.md#level_register)
+   - [smlua_level_util_get_info](functions-4.md#smlua_level_util_get_info)
+   - [smlua_level_util_get_info_from_short_name](functions-4.md#smlua_level_util_get_info_from_short_name)
+   - [warp_exit_level](functions-4.md#warp_exit_level)
+   - [warp_restart_level](functions-4.md#warp_restart_level)
+   - [warp_to_castle](functions-4.md#warp_to_castle)
+   - [warp_to_level](functions-4.md#warp_to_level)
+   - [warp_to_start_level](functions-4.md#warp_to_start_level)
+   - [warp_to_warpnode](functions-4.md#warp_to_warpnode)
+
+<br />
+
 - smlua_misc_utils.h
+   - [add_scroll_target](functions-4.md#add_scroll_target)
    - [allocate_mario_action](functions-4.md#allocate_mario_action)
    - [camera_config_enable_analog_cam](functions-4.md#camera_config_enable_analog_cam)
    - [camera_config_enable_free_cam](functions-4.md#camera_config_enable_free_cam)
@@ -1392,10 +1454,12 @@
    - [camera_unfreeze](functions-4.md#camera_unfreeze)
    - [deref_s32_pointer](functions-4.md#deref_s32_pointer)
    - [get_current_save_file_num](functions-4.md#get_current_save_file_num)
+   - [get_dialog_id](functions-4.md#get_dialog_id)
    - [get_environment_region](functions-4.md#get_environment_region)
    - [get_hand_foot_pos_x](functions-4.md#get_hand_foot_pos_x)
    - [get_hand_foot_pos_y](functions-4.md#get_hand_foot_pos_y)
    - [get_hand_foot_pos_z](functions-4.md#get_hand_foot_pos_z)
+   - [get_last_star_or_key](functions-4.md#get_last_star_or_key)
    - [get_network_area_timer](functions-4.md#get_network_area_timer)
    - [get_temp_s32_pointer](functions-4.md#get_temp_s32_pointer)
    - [hud_get_value](functions-4.md#hud_get_value)
@@ -1404,17 +1468,15 @@
    - [hud_set_value](functions-4.md#hud_set_value)
    - [hud_show](functions-4.md#hud_show)
    - [is_game_paused](functions-4.md#is_game_paused)
+   - [is_transition_playing](functions-4.md#is_transition_playing)
    - [movtexqc_register](functions-4.md#movtexqc_register)
    - [play_transition](functions-4.md#play_transition)
    - [save_file_set_using_backup_slot](functions-4.md#save_file_set_using_backup_slot)
    - [set_environment_region](functions-4.md#set_environment_region)
+   - [set_last_star_or_key](functions-4.md#set_last_star_or_key)
    - [set_override_far](functions-4.md#set_override_far)
    - [set_override_fov](functions-4.md#set_override_fov)
    - [set_override_near](functions-4.md#set_override_near)
-   - [warp_exit_level](functions-4.md#warp_exit_level)
-   - [warp_restart_level](functions-4.md#warp_restart_level)
-   - [warp_to_castle](functions-4.md#warp_to_castle)
-   - [warp_to_level](functions-4.md#warp_to_level)
 
 <br />
 
@@ -1427,6 +1489,7 @@
    - [get_temp_object_hitbox](functions-4.md#get_temp_object_hitbox)
    - [get_trajectory](functions-4.md#get_trajectory)
    - [obj_check_hitbox_overlap](functions-4.md#obj_check_hitbox_overlap)
+   - [obj_check_overlap_with_hitbox_params](functions-4.md#obj_check_overlap_with_hitbox_params)
    - [obj_count_objects_with_behavior_id](functions-4.md#obj_count_objects_with_behavior_id)
    - [obj_get_first](functions-4.md#obj_get_first)
    - [obj_get_first_with_behavior_id](functions-4.md#obj_get_first_with_behavior_id)

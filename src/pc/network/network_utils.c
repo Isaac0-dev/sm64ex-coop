@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "network_utils.h"
+#include "discord/discord.h"
 #include "game/mario_misc.h"
 
 u8 network_global_index_from_local(u8 localIndex) {
@@ -22,18 +23,27 @@ u8 network_local_index_from_global(u8 globalIndex) {
     return globalIndex + ((globalIndex < gNetworkPlayerLocal->globalIndex) ? 1 : 0);
 }
 
+char* network_discord_id_from_local_index(u8 localIndex) {
+    if (gNetworkSystem == &gNetworkSystemDiscord) { return gNetworkSystem->get_id_str(localIndex); }
+    return NULL;
+}
+
 bool network_is_server(void) {
     return gNetworkType == NT_SERVER;
+}
+
+bool network_is_moderator(void) {
+    extern u8 gIsModerator;
+    return gIsModerator;
 }
 
 u8* network_get_player_text_color(u8 localIndex) {
     if (localIndex >= MAX_PLAYERS) { localIndex = 0; }
 
     struct NetworkPlayer* np = &gNetworkPlayers[localIndex];
-    u8* rgb = get_player_color(np->overridePaletteIndex, 0);
     static u8 sTextRgb[3] = { 0 };
     for (int i = 0; i < 3; i++) {
-        sTextRgb[i] = 127 + rgb[i] / 2;
+        sTextRgb[i] = 127 + np->overridePalette.parts[SHIRT][i] / 2;
     }
 
     return sTextRgb;

@@ -32,7 +32,7 @@ void whomp_act_0(void) {
                 seq_player_lower_volume(SEQ_PLAYER_LEVEL, 60, 40);
             } else {
                 cur_obj_set_pos_to_home();
-                o->oHealth = 3;
+                o->oHealth = gBehaviorValues.KingWhompHealth;
             }
         } else if (should_start_or_continue_dialog(marioState, o) && cur_obj_update_dialog_with_cutscene(&gMarioStates[0], 2, 1, CUTSCENE_DIALOG, gBehaviorValues.dialogs.KingWhompDialog, whomp_act_0_continue_dialog)) {
             o->oAction = 2;
@@ -270,13 +270,13 @@ void (*sWhompActions[])(void) = {
 
 // MM
 void bhv_whomp_loop(void) {
-    if (!network_sync_object_initialized(o)) {
-        network_init_object(o, 4000.0f);
-        network_init_object_field(o, &o->oAngleVelPitch);
-        network_init_object_field(o, &o->oFaceAnglePitch);
-        network_init_object_field(o, &o->oForwardVel);
-        network_init_object_field(o, &o->oHealth);
-        network_init_object_field(o, &o->oFaceAnglePitch);
+    if (!sync_object_is_initialized(o->oSyncID)) {
+        sync_object_init(o, 4000.0f);
+        sync_object_init_field(o, &o->oAngleVelPitch);
+        sync_object_init_field(o, &o->oFaceAnglePitch);
+        sync_object_init_field(o, &o->oForwardVel);
+        sync_object_init_field(o, &o->oHealth);
+        sync_object_init_field(o, &o->oFaceAnglePitch);
     }
 
     cur_obj_update_floor_and_walls();

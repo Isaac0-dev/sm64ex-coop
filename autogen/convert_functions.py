@@ -13,7 +13,9 @@ out_filename_defs = 'autogen/lua_definitions/functions.lua'
 
 in_files = [
     "src/audio/external.h",
+    "src/engine/math_util.h",
     "src/engine/surface_collision.h",
+    "src/engine/surface_load.h",
     "src/game/camera.h",
     "src/game/characters.h",
     "src/game/mario_actions_airborne.c",
@@ -42,28 +44,34 @@ in_files = [
     "src/pc/lua/utils/smlua_model_utils.h",
     "src/pc/lua/utils/smlua_text_utils.h",
     "src/pc/lua/utils/smlua_audio_utils.h",
+    "src/pc/lua/utils/smlua_level_utils.h",
     "src/game/object_helpers.c",
     "src/game/obj_behaviors.c",
     "src/game/obj_behaviors_2.c",
     "src/game/spawn_sound.c",
-    "src/engine/surface_load.h",
     "src/game/object_list_processor.h",
     "src/game/behavior_actions.h",
     "src/game/mario_misc.h",
+    "src/pc/mods/mod_storage.h",
+    "src/pc/utils/misc.h",
+    "src/game/level_update.h"
 ]
 
 override_allowed_functions = {
-    "src/audio/external.h":                 [ " play_", "fade", "current_background" ],
+    "src/audio/external.h":                 [ " play_", "fade", "current_background", "stop_" ],
     "src/game/rumble_init.c":               [ "queue_rumble_", "reset_rumble_timers" ],
     "src/pc/djui/djui_popup.h" :            [ "create" ],
-    "src/game/save_file.h":                 [ "save_file_get_", "save_file_set_flags", "save_file_clear_flags" ],
+    "src/game/save_file.h":                 [ "save_file_get_", "save_file_set_flags", "save_file_clear_flags", "save_file_reload", "save_file_erase_current_backup_save", "save_file_set_star_flags" ],
     "src/pc/lua/utils/smlua_model_utils.h": [ "smlua_model_util_get_id" ],
     "src/game/object_list_processor.h":     [ "set_object_respawn_info_bits" ],
     "src/game/mario_misc.h":                [ "bhv_toad.*", "bhv_unlock_door.*" ],
+    "src/game/level_update.h":              [ "level_trigger_warp" ],
+    "src/pc/utils/misc.h":                  [ "update_all_mario_stars"],
 }
 
 override_disallowed_functions = {
     "src/audio/external.h":                [ " func_" ],
+    "src/engine/math_util.h":              [ "atan2s", "atan2f" ],
     "src/engine/surface_collision.h":      [ " debug_", "f32_find_wall_collision" ],
     "src/game/mario_actions_airborne.c":   [ "^[us]32 act_.*" ],
     "src/game/mario_actions_automatic.c":  [ "^[us]32 act_.*" ],
@@ -87,7 +95,8 @@ override_disallowed_functions = {
     "src/game/camera.h":                   [ "update_camera", "init_camera", "stub_camera", "^reset_camera", "move_point_along_spline" ],
     "src/game/behavior_actions.h":         [ "bhv_dust_smoke_loop", "bhv_init_room" ],
     "src/pc/lua/utils/smlua_audio_utils.h": [ "smlua_audio_utils_override", "audio_custom_shutdown"],
-    "src/pc/djui/djui_hud_utils.h":        [ "djui_hud_render_texture", "djui_hud_render_texture_raw" ],
+    "src/pc/djui/djui_hud_utils.h":         [ "djui_hud_render_texture", "djui_hud_render_texture_raw" ],
+    "src/pc/lua/utils/smlua_level_utils.h": [ "smlua_level_util_reset" ],
 }
 
 lua_function_params = {
@@ -147,6 +156,24 @@ param_vec3s_after_call = """
 param_override_build['Vec3s'] = {
     'before': param_vec3s_before_call,
     'after': param_vec3s_after_call
+}
+
+param_color_before_call = """
+    u8* $[IDENTIFIER] = smlua_get_color_from_buffer();
+    $[IDENTIFIER][0] = smlua_get_integer_field($[INDEX], "r");
+    $[IDENTIFIER][1] = smlua_get_integer_field($[INDEX], "g");
+    $[IDENTIFIER][2] = smlua_get_integer_field($[INDEX], "b");
+"""
+
+param_color_after_call = """
+    smlua_push_integer_field($[INDEX], "r", $[IDENTIFIER][0]);
+    smlua_push_integer_field($[INDEX], "g", $[IDENTIFIER][1]);
+    smlua_push_integer_field($[INDEX], "b", $[IDENTIFIER][2]);
+"""
+
+param_override_build['Color'] = {
+    'before': param_color_before_call,
+    'after': param_color_after_call
 }
 
 ############################################################################
@@ -466,6 +493,7 @@ def build_call(function):
 
 def build_function(function, do_extern):
     s = ''
+    fid = function['identifier']
 
     if len(function['params']) <= 0:
         s = 'int smlua_func_%s(UNUSED lua_State* L) {\n' % function['identifier']
@@ -477,7 +505,7 @@ def build_function(function, do_extern):
     i = 1
     for param in function['params']:
         s += build_param(param, i)
-        s += '    if (!gSmLuaConvertSuccess) { LOG_LUA("Failed to convert parameter %d"); return 0; }\n' % i
+        s += '    if (!gSmLuaConvertSuccess) { LOG_LUA("Failed to convert parameter %d for function \'%s\'"); return 0; }\n' % (i, fid)
         i += 1
     s += '\n'
 
@@ -793,7 +821,7 @@ def doc_files(processed_files):
 
         buffer = buffer.replace('$[FUNCTION_NAV_HERE', function_nav)
 
-        with open(get_path(out_filename_docs % page_name), 'w') as out:
+        with open(get_path(out_filename_docs % page_name), 'w', newline='\n') as out:
             out.write(buffer)
 
 ############################################################################
@@ -842,7 +870,7 @@ def def_files(processed_files):
     for def_pointer in def_pointers:
         s += '--- @class %s\n' % def_pointer
 
-    with open(get_path(out_filename_defs), 'w') as out:
+    with open(get_path(out_filename_defs), 'w', newline='\n') as out:
         out.write(s)
 
 ############################################################################
@@ -861,7 +889,7 @@ def main():
         .replace("$[BINDS]", built_binds)         \
         .replace("$[INCLUDES]", built_includes)
 
-    with open(filename, 'w') as out:
+    with open(filename, 'w', newline='\n') as out:
         out.write(gen)
 
     print('REJECTS:\n%s' % rejects)

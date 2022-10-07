@@ -546,6 +546,8 @@ const struct BehaviorTableEntry gBehaviorTable[id_bhv_max_count] = {
     BHV_ENTRY(bhvYellowBall),
     BHV_ENTRY(bhvYellowCoin),
     BHV_ENTRY(bhvYoshi),
+    BHV_ENTRY(RM_Scroll_Texture),
+    BHV_ENTRY(editor_Scroll_Texture)
 };
 
 enum BehaviorId get_id_from_behavior(const BehaviorScript* behavior) {
@@ -563,7 +565,7 @@ enum BehaviorId get_id_from_vanilla_behavior(const BehaviorScript* behavior) {
 }
 
 const BehaviorScript* get_behavior_from_id(enum BehaviorId id) {
-    const BehaviorScript* behavior = get_lua_behavior_from_id(id, true);
+    const BehaviorScript* behavior = smlua_get_hooked_behavior_from_id(id, true);
     if (behavior != NULL) { return behavior; }
 
     if (id < 0 || id >= id_bhv_max_count) {

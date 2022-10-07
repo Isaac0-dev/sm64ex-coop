@@ -2852,6 +2852,11 @@ function update_angle_from_move_flags(angle)
     -- ...
 end
 
+--- @return nil
+function uv_update_scroll()
+    -- ...
+end
+
 --- @param dest Vec3f
 --- @param src Vec3f
 --- @return nil
@@ -3015,6 +3020,11 @@ end
 --- @param enable integer
 --- @return nil
 function camera_set_use_course_specific_settings(enable)
+    -- ...
+end
+
+--- @return nil
+function center_rom_hack_camera()
     -- ...
 end
 
@@ -3254,6 +3264,12 @@ end
 --- @param lastGood Vec3f
 --- @return nil
 function resolve_geometry_collisions(pos, lastGood)
+    -- ...
+end
+
+--- @param enable integer
+--- @return nil
+function rom_hack_cam_set_collisions(enable)
     -- ...
 end
 
@@ -3809,6 +3825,30 @@ function seq_player_unlower_volume(player, fadeDuration)
     -- ...
 end
 
+--- @param seqId integer
+--- @return nil
+function stop_background_music(seqId)
+    -- ...
+end
+
+--- @param soundBits integer
+--- @param pos Vec3f
+--- @return nil
+function stop_sound(soundBits, pos)
+    -- ...
+end
+
+--- @param pos Vec3f
+--- @return nil
+function stop_sounds_from_source(pos)
+    -- ...
+end
+
+--- @return nil
+function stop_sounds_in_continuous_banks()
+    -- ...
+end
+
 --- @param m MarioState
 --- @return integer
 function does_mario_have_normal_cap_on_head(m)
@@ -3959,6 +3999,13 @@ end
 --- @param charCase integer
 --- @return Pointer_integer
 function get_star_name_sm64(courseNum, starNum, charCase)
+    -- ...
+end
+
+--- @param m MarioState
+--- @param warpOp integer
+--- @return integer
+function level_trigger_warp(m, warpOp)
     -- ...
 end
 
@@ -4114,6 +4161,13 @@ function mario_set_forward_vel(m, speed)
 end
 
 --- @param m MarioState
+--- @param wcd WallCollisionData
+--- @return nil
+function mario_update_wall(m, wcd)
+    -- ...
+end
+
+--- @param m MarioState
 --- @param soundBits integer
 --- @param waveParticleType integer
 --- @return nil
@@ -4184,6 +4238,15 @@ end
 --- @param radius number
 --- @return Surface
 function resolve_and_return_wall_collisions(pos, offset, radius)
+    -- ...
+end
+
+--- @param pos Vec3f
+--- @param offset number
+--- @param radius number
+--- @param collisionData WallCollisionData
+--- @return nil
+function resolve_and_return_wall_collisions_data(pos, offset, radius, collisionData)
     -- ...
 end
 
@@ -5058,6 +5121,114 @@ function stop_and_set_height_to_floor(arg0)
     -- ...
 end
 
+--- @param m MarioState
+--- @param result Vec3f
+--- @return integer
+function anim_spline_poll(m, result)
+    -- ...
+end
+
+--- @param current number
+--- @param target number
+--- @param inc number
+--- @param dec number
+--- @return number
+function approach_f32(current, target, inc, dec)
+    -- ...
+end
+
+--- @param current integer
+--- @param target integer
+--- @param inc integer
+--- @param dec integer
+--- @return integer
+function approach_s32(current, target, inc, dec)
+    -- ...
+end
+
+--- @param value number
+--- @param replacement number
+--- @return number
+function not_zero(value, replacement)
+    -- ...
+end
+
+--- @param dest Vec3f
+--- @param vecA Vec3f
+--- @param vecB Vec3f
+--- @param sclA number
+--- @param sclB number
+--- @return nil
+function vec3f_combine(dest, vecA, vecB, sclA, sclB)
+    -- ...
+end
+
+--- @param v1 Vec3f
+--- @param v2 Vec3f
+--- @return number
+function vec3f_dist(v1, v2)
+    -- ...
+end
+
+--- @param a Vec3f
+--- @param b Vec3f
+--- @return number
+function vec3f_dot(a, b)
+    -- ...
+end
+
+--- @param from Vec3f
+--- @param to Vec3f
+--- @param dist Pointer_number
+--- @param pitch Pointer_integer
+--- @param yaw Pointer_integer
+--- @return nil
+function vec3f_get_dist_and_angle(from, to, dist, pitch, yaw)
+    -- ...
+end
+
+--- @param a Vec3f
+--- @return number
+function vec3f_length(a)
+    -- ...
+end
+
+--- @param vec Vec3f
+--- @param onto Vec3f
+--- @param out Vec3f
+--- @return nil
+function vec3f_project(vec, onto, out)
+    -- ...
+end
+
+--- @param from Vec3f
+--- @param to Vec3f
+--- @param dist number
+--- @param pitch integer
+--- @param yaw integer
+--- @return nil
+function vec3f_set_dist_and_angle(from, to, dist, pitch, yaw)
+    -- ...
+end
+
+--- @return nil
+function update_all_mario_stars()
+    -- ...
+end
+
+--- @param key string
+--- @return string
+function mod_storage_load(key)
+    -- ...
+end
+
+--- @param key string
+--- @param value string
+--- @return boolean
+function mod_storage_save(key, value)
+    -- ...
+end
+
 --- @param courseNum integer
 --- @param actNum integer
 --- @param levelNum integer
@@ -5080,6 +5251,14 @@ function get_network_player_smallest_global()
     -- ...
 end
 
+--- @param np NetworkPlayer
+--- @param part PlayerParts
+--- @param color Color
+--- @return nil
+function network_player_color_to_palette(np, part, color)
+    -- ...
+end
+
 --- @return integer
 function network_player_connected_count()
     -- ...
@@ -5088,6 +5267,14 @@ end
 --- @param globalIndex integer
 --- @return NetworkPlayer
 function network_player_from_global_index(globalIndex)
+    -- ...
+end
+
+--- @param np NetworkPlayer
+--- @param part PlayerParts
+--- @param out Color
+--- @return nil
+function network_player_palette_to_color(np, part, out)
     -- ...
 end
 
@@ -5104,6 +5291,12 @@ end
 
 --- @param localIndex integer
 --- @return string
+function network_discord_id_from_local_index(localIndex)
+    -- ...
+end
+
+--- @param localIndex integer
+--- @return string
 function network_get_player_text_color_string(localIndex)
     -- ...
 end
@@ -5111,6 +5304,11 @@ end
 --- @param localIndex integer
 --- @return integer
 function network_global_index_from_local(localIndex)
+    -- ...
+end
+
+--- @return boolean
+function network_is_moderator()
     -- ...
 end
 
@@ -6324,6 +6522,11 @@ function cur_obj_set_hitbox_radius_and_height(radius, height)
     -- ...
 end
 
+--- @return nil
+function cur_obj_set_home_once()
+    -- ...
+end
+
 --- @param radius number
 --- @param height number
 --- @return nil
@@ -7092,6 +7295,11 @@ function save_file_clear_flags(flags)
     -- ...
 end
 
+--- @return nil
+function save_file_erase_current_backup_save()
+    -- ...
+end
+
 --- @param capPos Vec3s
 --- @return integer
 function save_file_get_cap_pos(capPos)
@@ -7143,9 +7351,23 @@ function save_file_get_total_star_count(fileIndex, minCourse, maxCourse)
     -- ...
 end
 
+--- @param load_all integer
+--- @return nil
+function save_file_reload(load_all)
+    -- ...
+end
+
 --- @param flags integer
 --- @return nil
 function save_file_set_flags(flags)
+    -- ...
+end
+
+--- @param fileIndex integer
+--- @param courseIndex integer
+--- @param starFlags integer
+--- @return nil
+function save_file_set_star_flags(fileIndex, courseIndex, starFlags)
     -- ...
 end
 
@@ -7317,6 +7539,79 @@ function smlua_collision_util_get(name)
     -- ...
 end
 
+--- @param scriptEntryName string
+--- @param courseNum integer
+--- @param fullName string
+--- @param shortName string
+--- @param acousticReach integer
+--- @param echoLevel1 integer
+--- @param echoLevel2 integer
+--- @param echoLevel3 integer
+--- @return integer
+function level_register(scriptEntryName, courseNum, fullName, shortName, acousticReach, echoLevel1, echoLevel2, echoLevel3)
+    -- ...
+end
+
+--- @param levelNum integer
+--- @return CustomLevelInfo
+function smlua_level_util_get_info(levelNum)
+    -- ...
+end
+
+--- @param shortName string
+--- @return CustomLevelInfo
+function smlua_level_util_get_info_from_short_name(shortName)
+    -- ...
+end
+
+--- @param aDelay integer
+--- @return boolean
+function warp_exit_level(aDelay)
+    -- ...
+end
+
+--- @return boolean
+function warp_restart_level()
+    -- ...
+end
+
+--- @param aLevel integer
+--- @return boolean
+function warp_to_castle(aLevel)
+    -- ...
+end
+
+--- @param aLevel integer
+--- @param aArea integer
+--- @param aAct integer
+--- @return boolean
+function warp_to_level(aLevel, aArea, aAct)
+    -- ...
+end
+
+--- @return boolean
+function warp_to_start_level()
+    -- ...
+end
+
+--- @param aLevel integer
+--- @param aArea integer
+--- @param aAct integer
+--- @param aWarpId integer
+--- @return boolean
+function warp_to_warpnode(aLevel, aArea, aAct, aWarpId)
+    -- ...
+end
+
+--- @param index integer
+--- @param name string
+--- @param offset integer
+--- @param size integer
+--- @return nil
+function add_scroll_target(index, name, offset, size)
+    -- ...
+end
+
 --- @param actFlags integer
 --- @return integer
 function allocate_mario_action(actFlags)
@@ -7454,6 +7749,11 @@ function get_current_save_file_num()
     -- ...
 end
 
+--- @return integer
+function get_dialog_id()
+    -- ...
+end
+
 --- @param index integer
 --- @return number
 function get_environment_region(index)
@@ -7478,6 +7778,11 @@ end
 --- @param index integer
 --- @return number
 function get_hand_foot_pos_z(m, index)
+    -- ...
+end
+
+--- @return integer
+function get_last_star_or_key()
     -- ...
 end
 
@@ -7530,6 +7835,11 @@ function is_game_paused()
     -- ...
 end
 
+--- @return boolean
+function is_transition_playing()
+    -- ...
+end
+
 --- @param name string
 --- @param level integer
 --- @param area integer
@@ -7562,6 +7872,12 @@ function set_environment_region(index, value)
     -- ...
 end
 
+--- @param value integer
+--- @return nil
+function set_last_star_or_key(value)
+    -- ...
+end
+
 --- @param far number
 --- @return nil
 function set_override_far(far)
@@ -7577,31 +7893,6 @@ end
 --- @param near number
 --- @return nil
 function set_override_near(near)
-    -- ...
-end
-
---- @param aDelay integer
---- @return boolean
-function warp_exit_level(aDelay)
-    -- ...
-end
-
---- @return boolean
-function warp_restart_level()
-    -- ...
-end
-
---- @param aLevel integer
---- @return boolean
-function warp_to_castle(aLevel)
-    -- ...
-end
-
---- @param aLevel integer
---- @param aArea integer
---- @param aAct integer
---- @return boolean
-function warp_to_level(aLevel, aArea, aAct)
     -- ...
 end
 
@@ -7624,8 +7915,20 @@ end
 
 --- @param o1 Object
 --- @param o2 Object
---- @return integer
+--- @return boolean
 function obj_check_hitbox_overlap(o1, o2)
+    -- ...
+end
+
+--- @param o Object
+--- @param x number
+--- @param y number
+--- @param z number
+--- @param h number
+--- @param r number
+--- @param d number
+--- @return boolean
+function obj_check_overlap_with_hitbox_params(o, x, y, z, h, r, d)
     -- ...
 end
 
@@ -7719,7 +8022,7 @@ function obj_has_model_extended(o, modelId)
 end
 
 --- @param o Object
---- @return integer
+--- @return boolean
 function obj_is_valid_for_interaction(o)
     -- ...
 end

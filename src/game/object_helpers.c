@@ -12,6 +12,7 @@
 #include "engine/math_util.h"
 #include "engine/surface_collision.h"
 #include "game_init.h"
+#include "hardcoded.h"
 #include "helper_macros.h"
 #include "ingame_menu.h"
 #include "interaction.h"
@@ -27,6 +28,7 @@
 #include "spawn_object.h"
 #include "spawn_sound.h"
 #include "pc/network/network.h"
+#include "pc/lua/smlua_hooks.h"
 
 u8 (*gContinueDialogFunction)(void) = NULL;
 struct Object* gContinueDialogFunctionObject = NULL;
@@ -117,7 +119,7 @@ Gfx *geo_update_layer_transparency(s32 callContext, struct GraphNode *node, UNUS
                 }
             }
 #else // gDebugInfo accesses were removed in all non-JP versions.
-            if (objectOpacity == 0 && segmented_to_virtual(bhvBowser) == objectGraphNode->behavior) {
+            if (objectOpacity == 0 && segmented_to_virtual(smlua_override_behavior(bhvBowser)) == objectGraphNode->behavior) {
                 objectGraphNode->oAnimState = 2;
             }
             // the debug info check was removed in US. so we need to
@@ -312,21 +314,21 @@ void obj_set_held_state(struct Object *obj, const BehaviorScript *heldBehavior) 
     obj->parentObj = o;
 
     if (obj->oFlags & OBJ_FLAG_HOLDABLE) {
-        if (heldBehavior == bhvCarrySomething3) {
+        if (heldBehavior == smlua_override_behavior(bhvCarrySomething3)) {
             obj->oHeldState = HELD_HELD;
         }
 
-        if (heldBehavior == bhvCarrySomething5) {
+        if (heldBehavior == smlua_override_behavior(bhvCarrySomething5)) {
             obj->oHeldState = HELD_THROWN;
             obj->heldByPlayerIndex = 0;
         }
 
-        if (heldBehavior == bhvCarrySomething4) {
+        if (heldBehavior == smlua_override_behavior(bhvCarrySomething4)) {
             obj->oHeldState = HELD_DROPPED;
             obj->heldByPlayerIndex = 0;
         }
     } else {
-        obj->curBhvCommand = segmented_to_virtual(heldBehavior);
+        obj->curBhvCommand = segmented_to_virtual(smlua_override_behavior(heldBehavior));
         obj->bhvStackIndex = 0;
     }
 }
@@ -908,7 +910,7 @@ void cur_obj_unused_init_on_floor(void) {
     cur_obj_enable_rendering();
 
     o->oPosY = find_floor_height(o->oPosX, o->oPosY, o->oPosZ);
-    if (o->oPosY < -10000.0f) {
+    if (o->oPosY < gLevelValues.floorLowerLimitMisc) {
         cur_obj_set_pos_relative_to_parent(0, 0, -70);
         o->oPosY = find_floor_height(o->oPosX, o->oPosY, o->oPosZ);
     }
@@ -982,6 +984,7 @@ struct Object* cur_obj_find_nearest_pole(void) {
 }
 
 struct Object *cur_obj_find_nearest_object_with_behavior(const BehaviorScript *behavior, f32 *dist) {
+    behavior = smlua_override_behavior(behavior);
     uintptr_t *behaviorAddr = segmented_to_virtual(behavior);
     struct Object *closestObj = NULL;
     struct Object *obj;
@@ -1009,6 +1012,7 @@ struct Object *cur_obj_find_nearest_object_with_behavior(const BehaviorScript *b
 }
 
 u16 cur_obj_count_objects_with_behavior(const BehaviorScript* behavior, f32 dist) {
+    behavior = smlua_override_behavior(behavior);
     u16 numObjs = 0;
     uintptr_t* behaviorAddr = segmented_to_virtual(behavior);
     struct Object* obj;
@@ -1074,6 +1078,7 @@ s32 count_objects_with_behavior(const BehaviorScript *behavior) {
 }
 
 struct Object *find_object_with_behavior(const BehaviorScript *behavior) {
+    behavior = smlua_override_behavior(behavior);
     uintptr_t *behaviorAddr = segmented_to_virtual(behavior);
     struct ObjectNode *listHead = &gObjectLists[get_object_list_from_behavior(behaviorAddr)];
     struct ObjectNode *obj = listHead->next;
@@ -1090,6 +1095,7 @@ struct Object *find_object_with_behavior(const BehaviorScript *behavior) {
 }
 
 struct Object *cur_obj_find_nearby_held_actor(const BehaviorScript *behavior, f32 maxDist) {
+    behavior = smlua_override_behavior(behavior);
     const BehaviorScript *behaviorAddr = segmented_to_virtual(behavior);
     struct ObjectNode *listHead;
     struct Object *obj;
@@ -1254,7 +1260,7 @@ void cur_obj_move_after_thrown_or_dropped(f32 forwardVel, f32 velY) {
 
     if (o->oFloorHeight > o->oPosY) {
         o->oPosY = o->oFloorHeight;
-    } else if (o->oFloorHeight < -10000.0f) {
+    } else if (o->oFloorHeight < gLevelValues.floorLowerLimitMisc) {
         //! OoB failsafe
         obj_copy_pos(o, gMarioObject);
         o->oFloorHeight = find_floor_height(o->oPosX, o->oPosY, o->oPosZ);
@@ -1269,7 +1275,7 @@ void cur_obj_move_after_thrown_or_dropped(f32 forwardVel, f32 velY) {
 }
 
 void cur_obj_get_thrown_or_placed(f32 forwardVel, f32 velY, s32 thrownAction) {
-    if (o->behavior == segmented_to_virtual(bhvBowser)) {
+    if (o->behavior == segmented_to_virtual(smlua_override_behavior(bhvBowser))) {
         // Interestingly, when bowser is thrown, he is offset slightly to
         // Mario's right
         cur_obj_set_pos_relative_to_parent(-41.684f, 85.859f, 321.577f);
@@ -1288,7 +1294,8 @@ void cur_obj_get_thrown_or_placed(f32 forwardVel, f32 velY, s32 thrownAction) {
         cur_obj_move_after_thrown_or_dropped(forwardVel, velY);
     }
 
-    if (o->oSyncID != 0 && gSyncObjects[o->oSyncID].owned) {
+    struct SyncObject* so = sync_object_get(o->oSyncID);
+    if (so && so->owned) {
         network_send_object(o);
     }
 }
@@ -1300,7 +1307,8 @@ void cur_obj_get_dropped(void) {
     o->oHeldState = HELD_FREE;
     cur_obj_move_after_thrown_or_dropped(0.0f, 0.0f);
 
-    if (o->oSyncID != 0 && gSyncObjects[o->oSyncID].owned) {
+    struct SyncObject* so = sync_object_get(o->oSyncID);
+    if (so && so->owned) {
         network_send_object(o);
     }
 }
@@ -1334,7 +1342,9 @@ void obj_mark_for_deletion(struct Object *obj) {
     //  setting it to 0 could potentially enable unexpected behavior. After an
     //  object is marked for deletion, it still updates on that frame (I think),
     //  so this is worth looking into.
-    obj->activeFlags = ACTIVE_FLAG_DEACTIVATED;
+    if (obj != NULL) {
+        obj->activeFlags = ACTIVE_FLAG_DEACTIVATED;
+    }
 }
 
 void cur_obj_disable(void) {
@@ -1415,7 +1425,7 @@ s32 cur_obj_move_xz(f32 steepSlopeNormalY, s32 careAboutEdgesAndSteepSlopes) {
         }
     }
 
-    if (intendedFloorHeight < -10000.0f) {
+    if (intendedFloorHeight < gLevelValues.floorLowerLimitMisc) {
         // Don't move into OoB
         o->oMoveFlags |= OBJ_MOVE_HIT_EDGE;
         return FALSE;
@@ -1515,7 +1525,7 @@ f32 cur_obj_move_y_and_get_water_level(f32 gravity, f32 buoyancy) {
 
     o->oPosY += o->oVelY;
     if (o->activeFlags & ACTIVE_FLAG_UNK10) {
-        waterLevel = -11000.0f;
+        waterLevel = gLevelValues.floorLowerLimit;
     } else {
         waterLevel = find_water_level(o->oPosX, o->oPosZ);
     }
@@ -1655,6 +1665,7 @@ void obj_set_behavior(struct Object *obj, const BehaviorScript *behavior) {
 }
 
 s32 cur_obj_has_behavior(const BehaviorScript *behavior) {
+    behavior = smlua_override_behavior(behavior);
     if (o->behavior == segmented_to_virtual(behavior)) {
         return TRUE;
     } else {
@@ -1663,6 +1674,7 @@ s32 cur_obj_has_behavior(const BehaviorScript *behavior) {
 }
 
 s32 obj_has_behavior(struct Object *obj, const BehaviorScript *behavior) {
+    behavior = smlua_override_behavior(behavior);
     if (obj->behavior == segmented_to_virtual(behavior)) {
         return TRUE;
     } else {
@@ -1884,7 +1896,7 @@ s32 cur_obj_detect_steep_floor(s16 steepAngleDegrees) {
         intendedFloorHeight = find_floor(intendedX, o->oPosY, intendedZ, &intendedFloor);
         deltaFloorHeight = intendedFloorHeight - o->oFloorHeight;
 
-        if (intendedFloorHeight < -10000.0f) {
+        if (intendedFloorHeight < gLevelValues.floorLowerLimitMisc) {
             o->oWallAngle = o->oMoveAngleYaw + 0x8000;
             return 2;
         } else if (intendedFloor->normal.y < steepNormalY && deltaFloorHeight > 0
@@ -3180,3 +3192,11 @@ void cur_obj_spawn_star_at_y_offset(f32 targetX, f32 targetY, f32 targetZ, f32 o
     o->oPosY = objectPosY;
 }
 #endif
+
+void cur_obj_set_home_once(void) {
+    if (o->setHome) { return; }
+    o->setHome = TRUE;
+    o->oHomeX = o->oPosX;
+    o->oHomeY = o->oPosY;
+    o->oHomeZ = o->oPosZ;
+}

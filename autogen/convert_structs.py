@@ -18,6 +18,7 @@ in_files = [
     'src/pc/lua/utils/smlua_anim_utils.h',
     'src/pc/lua/utils/smlua_misc_utils.h',
     'src/pc/lua/utils/smlua_collision_utils.h',
+    'src/pc/lua/utils/smlua_level_utils.h',
     'src/game/spawn_sound.h',
     'src/pc/network/network.h',
     'src/game/hardcoded.h',
@@ -63,7 +64,11 @@ override_field_types = {
 }
 
 override_field_mutable = {
-    "NetworkPlayer": [ "overrideModelIndex", "overridePaletteIndex" ],
+    "NetworkPlayer": [
+        "overrideModelIndex",
+        "overridePalette",
+        "overridePaletteIndex",
+    ],
 }
 
 override_field_invisible = {
@@ -93,7 +98,8 @@ sLuaManuallyDefinedStructs = [{
     'path': 'n/a',
     'structs': [
         'struct Vec3f { float x; float y; float z; }',
-        'struct Vec3s { s16 x; s16 y; s16 z; }'
+        'struct Vec3s { s16 x; s16 y; s16 z; }',
+        'struct Color { u8 r; u8 g; u8 b; }'
     ]
 }]
 
@@ -418,7 +424,7 @@ def doc_structs(structs):
             continue
         s += doc_struct(struct) + '\n'
 
-    with open(get_path(out_filename_docs), 'w') as out:
+    with open(get_path(out_filename_docs), 'w', newline='\n') as out:
         out.write(s)
 
 ############################################################################
@@ -466,7 +472,7 @@ def def_structs(structs):
     for def_pointer in def_pointers:
         s += '--- @class %s\n' % def_pointer
 
-    with open(get_path(out_filename_defs), 'w') as out:
+    with open(get_path(out_filename_defs), 'w', newline='\n') as out:
         out.write(s)
 
 ############################################################################
@@ -488,11 +494,11 @@ def build_files():
     built_include = build_includes()
 
     out_c_filename = get_path(out_filename_c)
-    with open(out_c_filename, 'w') as out:
+    with open(out_c_filename, 'w', newline='\n') as out:
         out.write(c_template.replace("$[BODY]", built_body).replace('$[INCLUDES]', built_include))
 
     out_h_filename = get_path(out_filename_h)
-    with open(out_h_filename, 'w') as out:
+    with open(out_h_filename, 'w', newline='\n') as out:
         out.write(h_template.replace("$[BODY]", built_enum))
 
     doc_structs(parsed)

@@ -71,7 +71,7 @@ static PointerData GetDataFromPointer(const void* aPtr, GfxData* aGfxData) {
             return { _Node->mName, 0 };
         }
     }
-
+    
     // Collisions
     for (auto& _Node : aGfxData->mCollisions) {
         if (_Node->mData == aPtr) {
@@ -132,10 +132,16 @@ static PointerData GetDataFromPointer(const void* aPtr, GfxData* aGfxData) {
         return { builtinGeo, 0 };
     }
 
-    // Built-in Lvl Cols
-    auto builtinCol = DynOS_Builtin_LvlCol_GetFromData((const Collision*)aPtr);
+    // Built-in Cols
+    auto builtinCol = DynOS_Builtin_Col_GetFromData((const Collision*)aPtr);
     if (builtinCol != NULL) {
         return { builtinCol, 0 };
+    }
+    
+    // Built-in Animations
+    auto builtinAnim = DynOS_Builtin_Anim_GetFromData((const Animation *)aPtr);
+    if (builtinAnim != NULL) {
+        return { builtinAnim, 0 };
     }
 
     // Built-in Script Pointers
@@ -177,21 +183,21 @@ static PointerData GetDataFromPointer(const void* aPtr, GfxData* aGfxData) {
         }
     }
 
-    PrintError("Unable to find pointer!");
+    PrintError("Unable to find pointer %x!", aPtr);
     return { "", 0 };
 }
 
-void DynOS_Pointer_Lua_Write(FILE* aFile, u32 index, GfxData* aGfxData) {
+void DynOS_Pointer_Lua_Write(BinFile* aFile, u32 index, GfxData* aGfxData) {
     String& token = aGfxData->mLuaTokenList[index];
-    WriteBytes<u32>(aFile, LUA_VAR_CODE);
+    aFile->Write<u32>(LUA_VAR_CODE);
     token.Write(aFile);
 }
 
-void DynOS_Pointer_Write(FILE* aFile, const void* aPtr, GfxData* aGfxData) {
+void DynOS_Pointer_Write(BinFile* aFile, const void* aPtr, GfxData* aGfxData) {
 
     // NULL
     if (!aPtr) {
-        WriteBytes<u32>(aFile, 0);
+        aFile->Write<u32>(0);
         return;
     }
 
@@ -200,7 +206,7 @@ void DynOS_Pointer_Write(FILE* aFile, const void* aPtr, GfxData* aGfxData) {
         if (aPtr == aGfxData->mLuaPointerList[i]) {
             u32 index = *((u32*)aPtr);
             String& token = aGfxData->mLuaTokenList[index];
-            WriteBytes<u32>(aFile, LUA_VAR_CODE);
+            aFile->Write<u32>(LUA_VAR_CODE);
             token.Write(aFile);
             return;
         }
@@ -209,16 +215,16 @@ void DynOS_Pointer_Write(FILE* aFile, const void* aPtr, GfxData* aGfxData) {
     // Built-in functions
     s32 _GeoFunctionIndex = DynOS_Builtin_Func_GetIndexFromData(aPtr);
     if (_GeoFunctionIndex != -1) {
-        WriteBytes<u32>(aFile, FUNCTION_CODE);
-        WriteBytes<s32>(aFile, _GeoFunctionIndex);
+        aFile->Write<u32>(FUNCTION_CODE);
+        aFile->Write<s32>(_GeoFunctionIndex);
         return;
     }
 
     // Pointer
     PointerData _PtrData = GetDataFromPointer(aPtr, aGfxData);
-    WriteBytes<u32>(aFile, POINTER_CODE);
+    aFile->Write<u32>(POINTER_CODE);
     _PtrData.first.Write(aFile);
-    WriteBytes<u32>(aFile, _PtrData.second);
+    aFile->Write<u32>(_PtrData.second);
 }
 
   /////////////
@@ -320,6 +326,13 @@ static void *GetPointerFromData(GfxData *aGfxData, const String &aPtrName, u32 a
             return (void *) (_Node->mData + aPtrData);
         }
     }
+    
+    // Behavior scripts
+    for (auto &_Node : aGfxData->mBehaviorScripts) {
+        if (_Node->mName == aPtrName) {
+            return (void *) _Node->mData;
+        }
+    }
 
     // Macro objects
     for (auto &_Node : aGfxData->mMacroObjects) {
@@ -356,7 +369,7 @@ static void *GetPointerFromData(GfxData *aGfxData, const String &aPtrName, u32 a
         }
     }
 
-    // Behaviors
+    // Lua Behaviors
     enum BehaviorId id = get_id_from_behavior_name(aPtrName.begin());
     if (id >= 0 && id < id_bhv_max_count) {
         return (void*)get_behavior_from_id(id);
@@ -374,10 +387,16 @@ static void *GetPointerFromData(GfxData *aGfxData, const String &aPtrName, u32 a
         return (void*)builtinGeo;
     }
 
-    // Built-in Lvl Cols
-    auto builtinCol = DynOS_Builtin_LvlCol_GetFromName(aPtrName.begin());
+    // Built-in Cols
+    auto builtinCol = DynOS_Builtin_Col_GetFromName(aPtrName.begin());
     if (builtinCol != NULL) {
         return (void*)builtinCol;
+    }
+    
+    // Built-in Animations
+    auto builtinAnim = DynOS_Builtin_Anim_GetFromName(aPtrName.begin());
+    if (builtinAnim != NULL) {
+        return (void *)builtinAnim;
     }
 
     // Built-in Script Pointers
@@ -397,7 +416,7 @@ static void *GetPointerFromData(GfxData *aGfxData, const String &aPtrName, u32 a
     return NULL;
 }
 
-void *DynOS_Pointer_Load(FILE *aFile, GfxData *aGfxData, u32 aValue, u8* outFlags) {
+void *DynOS_Pointer_Load(BinFile *aFile, GfxData *aGfxData, u32 aValue, u8* outFlags) {
 
     // LUAV
     if (aValue == LUA_VAR_CODE) {
@@ -414,14 +433,14 @@ void *DynOS_Pointer_Load(FILE *aFile, GfxData *aGfxData, u32 aValue, u8* outFlag
 
     // FUNC
     if (aValue == FUNCTION_CODE) {
-        s32 _FunctionIndex = ReadBytes<s32>(aFile);
+        s32 _FunctionIndex = aFile->Read<s32>();
         return (void*) DynOS_Builtin_Func_GetFromIndex(_FunctionIndex);
     }
 
     // PNTR
     if (aValue == POINTER_CODE) {
         String _PtrName; _PtrName.Read(aFile);
-        u32   _PtrData = ReadBytes<u32>(aFile);
+        u32   _PtrData = aFile->Read<u32>();
         return GetPointerFromData(aGfxData, _PtrName, _PtrData, outFlags);
     }
 

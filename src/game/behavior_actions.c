@@ -47,6 +47,7 @@
 #include "rumble_init.h"
 #include "hardcoded.h"
 #include "pc/lua/utils/smlua_model_utils.h"
+#include "pc/lua/smlua_hooks.h"
 
 #define o gCurrentObject
 
@@ -174,7 +175,7 @@ Gfx *geo_move_mario_part_from_parent(s32 run, UNUSED struct GraphNode *node, Mat
 
     if (run == TRUE) {
         sp1C = (struct Object *) gCurGraphNodeObject;
-        if (sp1C->behavior == bhvMario && sp1C->prevObj != NULL) {
+        if (sp1C->behavior == smlua_override_behavior(bhvMario) && sp1C->prevObj != NULL) {
             create_transformation_from_matrices(sp20, mtx, *gCurGraphNodeCamera->matrixPtr);
             obj_update_pos_from_parent_transformation(sp20, sp1C->prevObj);
             obj_set_gfx_pos_from_pos(sp1C->prevObj);
@@ -283,3 +284,4 @@ s32 set_obj_anim_with_accel_and_sound(s16 a0, s16 a1, s32 a2) {
 #include "behaviors/strong_wind_particle.inc.c"
 #include "behaviors/sl_snowman_wind.inc.c"
 #include "behaviors/sl_walking_penguin.inc.c"
+#include "behaviors/texscroll.inc.c"

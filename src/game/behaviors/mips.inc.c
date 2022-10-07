@@ -36,7 +36,7 @@ void bhv_mips_init(void) {
     u8 starFlags = save_file_get_star_flags(gCurrSaveFileNum - 1, -1);
 
     // If the player has >= 15 stars and hasn't collected first MIPS star...
-    if (save_file_get_total_star_count(gCurrSaveFileNum - 1, COURSE_MIN - 1, COURSE_MAX - 1) >= 15
+    if (save_file_get_total_star_count(gCurrSaveFileNum - 1, COURSE_MIN - 1, COURSE_MAX - 1) >= gBehaviorValues.MipsStar1Requirement
         && !(starFlags & SAVE_FLAG_TO_STAR_FLAG(SAVE_FLAG_COLLECTED_MIPS_STAR_1))) {
         o->oBehParams2ndByte = 0;
 #ifndef VERSION_JP
@@ -44,7 +44,7 @@ void bhv_mips_init(void) {
 #endif
     }
     // If the player has >= 50 stars and hasn't collected second MIPS star...
-    else if (save_file_get_total_star_count(gCurrSaveFileNum - 1, COURSE_MIN - 1, COURSE_MAX - 1) >= 50
+    else if (save_file_get_total_star_count(gCurrSaveFileNum - 1, COURSE_MIN - 1, COURSE_MAX - 1) >= gBehaviorValues.MipsStar2Requirement
              && !(starFlags & SAVE_FLAG_TO_STAR_FLAG(SAVE_FLAG_COLLECTED_MIPS_STAR_2))) {
         o->oBehParams2ndByte = 1;
 #ifndef VERSION_JP
@@ -67,14 +67,14 @@ void bhv_mips_init(void) {
 
     cur_obj_init_animation(0);
 
-    struct SyncObject* so = network_init_object(o, 4000.0f);
+    struct SyncObject* so = sync_object_init(o, 4000.0f);
     if (so) {
-        network_init_object_field(o, &o->oMipsStartWaypointIndex);
-        network_init_object_field(o, &o->oForwardVel);
-        network_init_object_field(o, &o->oMipsStarStatus);
-        network_init_object_field(o, &o->oBehParams2ndByte);
-        network_init_object_field(o, &o->oHeldState);
-        network_init_object_field(o, &o->oFlags);
+        sync_object_init_field(o, &o->oMipsStartWaypointIndex);
+        sync_object_init_field(o, &o->oForwardVel);
+        sync_object_init_field(o, &o->oMipsStarStatus);
+        sync_object_init_field(o, &o->oBehParams2ndByte);
+        sync_object_init_field(o, &o->oHeldState);
+        sync_object_init_field(o, &o->oFlags);
         so->on_received_pre = bhv_mips_on_received_pre;
         so->on_received_post = bhv_mips_on_received_post;
     }
@@ -303,7 +303,7 @@ void bhv_mips_dropped(void) {
     cur_obj_become_tangible();
     o->oForwardVel = 3.0f;
     o->oAction = MIPS_ACT_IDLE;
-    if (network_owns_object(o)) {
+    if (sync_object_is_owned_locally(o->oSyncID)) {
         network_send_object(o);
     }
 }
@@ -321,7 +321,7 @@ void bhv_mips_thrown(void) {
     o->oForwardVel = 25.0f;
     o->oVelY = 20.0f;
     o->oAction = MIPS_ACT_FALL_DOWN;
-    if (network_owns_object(o)) {
+    if (sync_object_is_owned_locally(o->oSyncID)) {
         network_send_object(o);
     }
 }

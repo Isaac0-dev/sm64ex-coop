@@ -31,6 +31,8 @@ void bhv_collect_star_loop(void) {
     o->oFaceAngleYaw += 0x800;
 
     if (o->oInteractStatus & INT_STATUS_INTERACTED) {
+        extern u8 gLastCollectedStarOrKey;
+        gLastCollectedStarOrKey = 0;
         mark_obj_for_deletion(o);
         o->oInteractStatus = 0;
     }
@@ -246,14 +248,14 @@ void bhv_hidden_red_coin_star_init(void) {
     // who last interacted to begin with.
     o->oHiddenStarLastInteractedObject = NULL;
     
-    if (!network_sync_object_initialized(o)) {
-        struct SyncObject *so = network_init_object(o, SYNC_DISTANCE_ONLY_EVENTS);
+    if (!sync_object_is_initialized(o->oSyncID)) {
+        struct SyncObject *so = sync_object_init(o, SYNC_DISTANCE_ONLY_EVENTS);
         if (so) {
-            network_init_object_field(o, &o->oAction);
-            network_init_object_field(o, &o->oHiddenStarTriggerCounter);
-            network_init_object_field(o, &o->oPosX);
-            network_init_object_field(o, &o->oPosY);
-            network_init_object_field(o, &o->oPosZ);
+            sync_object_init_field(o, &o->oAction);
+            sync_object_init_field(o, &o->oHiddenStarTriggerCounter);
+            sync_object_init_field(o, &o->oPosX);
+            sync_object_init_field(o, &o->oPosY);
+            sync_object_init_field(o, &o->oPosZ);
         }
     }
 }

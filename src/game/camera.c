@@ -806,10 +806,10 @@ void set_camera_height(struct Camera *c, f32 goalHeight) {
             }
         }
         approach_camera_height(c, goalHeight, 20.f);
-        if (camCeilHeight != CELL_HEIGHT_LIMIT) {
+        if (camCeilHeight != gLevelValues.ceilHeightLimit) {
             camCeilHeight -= baseOff;
             if ((c->pos[1] > camCeilHeight && sMarioGeometry.currFloorHeight + baseOff < camCeilHeight)
-                || (sMarioGeometry.currCeilHeight != CELL_HEIGHT_LIMIT
+                || (sMarioGeometry.currCeilHeight != gLevelValues.ceilHeightLimit
                     && sMarioGeometry.currCeilHeight > camCeilHeight && c->pos[1] > camCeilHeight)) {
                 c->pos[1] = camCeilHeight;
             }
@@ -1504,7 +1504,7 @@ s32 update_fixed_camera(struct Camera *c, Vec3f focus, UNUSED Vec3f pos) {
     vec3f_add(basePos, sCastleEntranceOffset);
 
     if (sMarioGeometry.currFloorType != SURFACE_DEATH_PLANE
-        && sMarioGeometry.currFloorHeight != FLOOR_LOWER_LIMIT) {
+        && sMarioGeometry.currFloorHeight != gLevelValues.floorLowerLimit) {
         goalHeight = sMarioGeometry.currFloorHeight + basePos[1] + heightOffset;
     } else {
         goalHeight = gLakituState.goalPos[1];
@@ -1515,7 +1515,7 @@ s32 update_fixed_camera(struct Camera *c, Vec3f focus, UNUSED Vec3f pos) {
     }
 
     ceilHeight = find_ceil(c->pos[0], goalHeight - 100.f, c->pos[2], &ceiling);
-    if (ceilHeight != CELL_HEIGHT_LIMIT) {
+    if (ceilHeight != gLevelValues.ceilHeightLimit) {
         if (goalHeight > (ceilHeight -= 125.f)) {
             goalHeight = ceilHeight;
         }
@@ -1614,7 +1614,7 @@ s32 update_boss_fight_camera(struct Camera *c, Vec3f focus, Vec3f pos) {
     // When C-Down is not active, this
     vec3f_set_dist_and_angle(focus, pos, focusDistance, 0x1000, yaw);
     // Find the floor of the arena
-    pos[1] = find_floor(c->areaCenX, CELL_HEIGHT_LIMIT, c->areaCenZ, &floor);
+    pos[1] = find_floor(c->areaCenX, gLevelValues.ceilHeightLimit, c->areaCenZ, &floor);
     if (floor != NULL) {
         nx = floor->normal.x;
         ny = floor->normal.y;
@@ -2290,7 +2290,7 @@ s16 update_default_camera(struct Camera *c) {
 
     // If there's water below the camera, decide whether to keep the camera above the water surface
     waterHeight = find_water_level(cPos[0], cPos[2]);
-    if (waterHeight != FLOOR_LOWER_LIMIT) {
+    if (waterHeight != gLevelValues.floorLowerLimit) {
         waterHeight += 125.f;
         distFromWater = waterHeight - marioFloorHeight;
         if (!(gCameraMovementFlags & CAM_MOVE_METAL_BELOW_WATER)) {
@@ -2340,7 +2340,7 @@ s16 update_default_camera(struct Camera *c) {
 
     // Make Lakitu fly above the gas
     gasHeight = find_poison_gas_level(cPos[0], cPos[2]);
-    if (gasHeight != FLOOR_LOWER_LIMIT) {
+    if (gasHeight != gLevelValues.floorLowerLimit) {
         if ((gasHeight += 130.f) > c->pos[1]) {
             c->pos[1] = gasHeight;
         }
@@ -2351,7 +2351,7 @@ s16 update_default_camera(struct Camera *c) {
         if (c->mode == CAMERA_MODE_FREE_ROAM) {
             camFloorHeight -= 100.f;
         }
-        ceilHeight = CELL_HEIGHT_LIMIT;
+        ceilHeight = gLevelValues.ceilHeightLimit;
         vec3f_copy(c->focus, sMarioCamState->pos);
     }
 
@@ -2360,10 +2360,10 @@ s16 update_default_camera(struct Camera *c) {
         if (sMarioCamState->pos[1] - 100.f > camFloorHeight) {
             camFloorHeight = sMarioCamState->pos[1] - 100.f;
         }
-        ceilHeight = CELL_HEIGHT_LIMIT;
+        ceilHeight = gLevelValues.ceilHeightLimit;
         vec3f_copy(c->focus, sMarioCamState->pos);
     }
-    if (camFloorHeight != FLOOR_LOWER_LIMIT) {
+    if (camFloorHeight != gLevelValues.floorLowerLimit) {
         camFloorHeight += posHeight;
         approach_camera_height(c, camFloorHeight, 20.f);
     }
@@ -2385,7 +2385,7 @@ s16 update_default_camera(struct Camera *c) {
             vec3f_set_dist_and_angle(c->focus, c->pos, dist, tempPitch, tempYaw);
         }
     }
-    if (ceilHeight != CELL_HEIGHT_LIMIT) {
+    if (ceilHeight != gLevelValues.ceilHeightLimit) {
         if (c->pos[1] > (ceilHeight -= 150.f)
             && (avoidStatus = is_range_behind_surface(c->pos, sMarioCamState->pos, ceil, 0, -1)) == 1) {
             c->pos[1] = ceilHeight;
@@ -2483,7 +2483,7 @@ s32 update_spiral_stairs_camera(struct Camera *c, Vec3f focus, Vec3f pos) {
     checkPos[2] = focus[2] + (cPos[2] - focus[2]) * 0.7f;
     floorHeight = find_floor(checkPos[0], checkPos[1] + 50.f, checkPos[2], &floor);
 
-    if (floorHeight != FLOOR_LOWER_LIMIT) {
+    if (floorHeight != gLevelValues.floorLowerLimit) {
         if (floorHeight < sMarioGeometry.currFloorHeight) {
             floorHeight = sMarioGeometry.currFloorHeight;
         }
@@ -3031,7 +3031,7 @@ void update_lakitu(struct Camera *c) {
                                      gLakituState.pos[1] + 20.0f,
                                      gLakituState.pos[2], &floor);
             gCheckingSurfaceCollisionsForCamera = false;
-            if (distToFloor != FLOOR_LOWER_LIMIT) {
+            if (distToFloor != gLevelValues.floorLowerLimit) {
                 if (gLakituState.pos[1] < (distToFloor += 100.0f)) {
                     gLakituState.pos[1] = distToFloor;
                 }
@@ -3066,10 +3066,17 @@ void update_camera(struct Camera *c) {
 #endif
             ) {
             if ((sCurrPlayMode != PLAY_MODE_PAUSED) && gPlayer1Controller->buttonPressed & R_TRIG) {
+                bool returnValue = true;
                 if (set_cam_angle(0) == CAM_ANGLE_LAKITU) {
-                    set_cam_angle(CAM_ANGLE_MARIO);
+                    smlua_call_event_hooks_int_params_ret_bool(HOOK_ON_CHANGE_CAMERA_ANGLE, CAM_ANGLE_MARIO, &returnValue);
+                    if (returnValue) {
+                        set_cam_angle(CAM_ANGLE_MARIO);
+                    }
                 } else {
-                    set_cam_angle(CAM_ANGLE_LAKITU);
+                    smlua_call_event_hooks_int_params_ret_bool(HOOK_ON_CHANGE_CAMERA_ANGLE, CAM_ANGLE_LAKITU, &returnValue);
+                    if (returnValue) {
+                        set_cam_angle(CAM_ANGLE_LAKITU);
+                    }
                 }
             }
         }
@@ -5567,7 +5574,7 @@ s16 next_lakitu_state(Vec3f newPos, Vec3f newFoc, Vec3f curPos, Vec3f curFoc,
 
         if (gCamera->cutscene != 0 || !(gCameraMovementFlags & CAM_MOVE_C_UP_MODE)) {
             floorHeight = find_floor(newPos[0], newPos[1], newPos[2], &floor);
-            if (floorHeight != FLOOR_LOWER_LIMIT) {
+            if (floorHeight != gLevelValues.floorLowerLimit) {
                 if ((floorHeight += 125.f) > newPos[1]) {
                     newPos[1] = floorHeight;
                 }
@@ -6610,6 +6617,14 @@ struct CutsceneSplinePoint sEndingLookAtSkyFocus[] = {
     { -1, 0, { 636, 2027, -415 } }
 };
 
+static struct CameraTrigger* get_camera_trigger(s16 levelNum) {
+    if (levelNum < 0 || levelNum >= LEVEL_COUNT + 2) {
+        return NULL;
+    }
+
+    return sCameraTriggers[levelNum];
+}
+
 /**
  * Activates any CameraTriggers that Mario is inside.
  * Then, applies area-specific processing to the camera, such as setting the default mode, or changing
@@ -6638,40 +6653,41 @@ s16 camera_course_processing(struct Camera *c) {
         level = LEVEL_COUNT + 1;
     }
 
-    if (sCameraTriggers[level] != NULL) {
+    if (get_camera_trigger(level) != NULL) {
         b = 0;
 
         // Process positional triggers.
         // All triggered events are called, not just the first one.
-        while (sCameraTriggers[level][b].event != NULL) {
+        struct CameraTrigger* camTrigger = get_camera_trigger(level);
+        while (camTrigger[b].event != NULL) {
 
             // Check only the current area's triggers
-            if (sCameraTriggers[level][b].area == area) {
+            if (camTrigger[b].area == area) {
                 // Copy the bounding box into center and bounds
-                vec3f_set(center, sCameraTriggers[level][b].centerX,
-                                  sCameraTriggers[level][b].centerY,
-                                  sCameraTriggers[level][b].centerZ);
-                vec3f_set(bounds, sCameraTriggers[level][b].boundsX,
-                                  sCameraTriggers[level][b].boundsY,
-                                  sCameraTriggers[level][b].boundsZ);
+                vec3f_set(center, camTrigger[b].centerX,
+                                  camTrigger[b].centerY,
+                                  camTrigger[b].centerZ);
+                vec3f_set(bounds, camTrigger[b].boundsX,
+                                  camTrigger[b].boundsY,
+                                  camTrigger[b].boundsZ);
 
                 // Check if Mario is inside the bounds
                 if (is_pos_in_bounds(sMarioCamState->pos, center, bounds,
-                                                   sCameraTriggers[level][b].boundsYaw) == TRUE) {
+                                                   camTrigger[b].boundsYaw) == TRUE) {
                     //! This should be checked before calling is_pos_in_bounds. (It doesn't belong
                     //! outside the while loop because some events disable area processing)
                     if (!(sStatusFlags & CAM_FLAG_BLOCK_AREA_PROCESSING)) {
-                        sCameraTriggers[level][b].event(c);
+                        camTrigger[b].event(c);
                         insideBounds = TRUE;
                     }
                 }
             }
 
-            if ((sCameraTriggers[level])[b].area == -1) {
+            if ((camTrigger)[b].area == -1) {
                 // Default triggers are only active if Mario is not already inside another trigger
                 if (!insideBounds) {
                     if (!(sStatusFlags & CAM_FLAG_BLOCK_AREA_PROCESSING)) {
-                        sCameraTriggers[level][b].event(c);
+                        camTrigger[b].event(c);
                     }
                 }
             }
@@ -6810,19 +6826,19 @@ void resolve_geometry_collisions(Vec3f pos, UNUSED Vec3f lastGood) {
     floorY = find_floor(pos[0], pos[1] + 50.f, pos[2], &surf);
     ceilY = find_ceil(pos[0], pos[1] - 50.f, pos[2], &surf);
 
-    if ((FLOOR_LOWER_LIMIT != floorY) && (CELL_HEIGHT_LIMIT == ceilY)) {
+    if ((gLevelValues.floorLowerLimit != floorY) && (gLevelValues.ceilHeightLimit == ceilY)) {
         if (pos[1] < (floorY += 125.f)) {
             pos[1] = floorY;
         }
     }
 
-    if ((FLOOR_LOWER_LIMIT == floorY) && (CELL_HEIGHT_LIMIT != ceilY)) {
+    if ((gLevelValues.floorLowerLimit == floorY) && (gLevelValues.ceilHeightLimit != ceilY)) {
         if (pos[1] > (ceilY -= 125.f)) {
             pos[1] = ceilY;
         }
     }
 
-    if ((FLOOR_LOWER_LIMIT != floorY) && (CELL_HEIGHT_LIMIT != ceilY)) {
+    if ((gLevelValues.floorLowerLimit != floorY) && (gLevelValues.ceilHeightLimit != ceilY)) {
         floorY += 125.f;
         ceilY -= 125.f;
 
@@ -6949,14 +6965,14 @@ void find_mario_floor_and_ceil(struct PlayerGeometry *pg) {
     gCheckingSurfaceCollisionsForCamera = TRUE;
 
     if (find_floor(sMarioCamState->pos[0], sMarioCamState->pos[1] + 10.f,
-                   sMarioCamState->pos[2], &surf) != FLOOR_LOWER_LIMIT) {
+                   sMarioCamState->pos[2], &surf) != gLevelValues.floorLowerLimit) {
         pg->currFloorType = surf->type;
     } else {
         pg->currFloorType = 0;
     }
 
     if (find_ceil(sMarioCamState->pos[0], sMarioCamState->pos[1] - 10.f,
-                  sMarioCamState->pos[2], &surf) != CELL_HEIGHT_LIMIT) {
+                  sMarioCamState->pos[2], &surf) != gLevelValues.ceilHeightLimit) {
         pg->currCeilType = surf->type;
     } else {
         pg->currCeilType = 0;
@@ -8829,7 +8845,7 @@ BAD_RETURN(s32) cutscene_suffocation_stay_above_gas(struct Camera *c) {
     cutscene_goto_cvar_pos(c, 400.f, 0x2800, 0x200, 0);
     gasLevel = find_poison_gas_level(sMarioCamState->pos[0], sMarioCamState->pos[2]);
 
-    if (gasLevel != FLOOR_LOWER_LIMIT) {
+    if (gasLevel != gLevelValues.floorLowerLimit) {
         if ((gasLevel += 130.f) > c->pos[1]) {
             c->pos[1] = gasLevel;
         }
@@ -10218,7 +10234,7 @@ BAD_RETURN(s32) cutscene_exit_painting_start(struct Camera *c) {
     offset_rotated(c->pos, sCutsceneVars[0].point, sCutsceneVars[2].point, sCutsceneVars[0].angle);
     floorHeight = find_floor(c->pos[0], c->pos[1] + 10.f, c->pos[2], &floor);
 
-    if (floorHeight != FLOOR_LOWER_LIMIT) {
+    if (floorHeight != gLevelValues.floorLowerLimit) {
         if (c->pos[1] < (floorHeight += 60.f)) {
             c->pos[1] = floorHeight;
         }
@@ -11740,12 +11756,21 @@ static u8 sRomHackZoom = 1;
 static s8 sRomHackIsUpdate = 0;
 static f32 sRomHackWaterFocus = 0;
 static f32 sRomHackWaterPitchOffset = 0;
+u8 gRomHackCamSetCollisions = TRUE;
+
+void rom_hack_cam_set_collisions(u8 enable) {
+    gRomHackCamSetCollisions = enable;
+}
 
 static u8 rom_hack_cam_can_see_mario(Vec3f desiredPos) {
     // do collision checking
     struct Surface *surf = NULL;
+    if (!gRomHackCamSetCollisions) {
+        return true;
+    }
+
     f32 floorHeight = find_floor(desiredPos[0], desiredPos[1], desiredPos[2], &surf);
-    if (surf == NULL || floorHeight <= -11000) {
+    if (surf == NULL || floorHeight <= gLevelValues.floorLowerLimit) {
         return false;
     }
 
@@ -11829,6 +11854,11 @@ void rom_hack_cam_walk(Vec3f pos, Vec3f dir, f32 dist) {
 
 static s16 sRomHackOffset = 0;
 
+void center_rom_hack_camera(void) {
+    sRomHackYaw = DEGREES(180 + 90) - gMarioStates[0].intendedYaw;
+    sRomHackYaw = (sRomHackYaw / DEGREES(45)) * DEGREES(45);
+}
+
 /**
  * A mode that has 8 camera angles, 45 degrees apart, that is slightly smarter
  */
@@ -11872,12 +11902,6 @@ void mode_rom_hack_camera(struct Camera *c) {
             play_sound_button_change_blocked();
         }
         sRomHackZoom = 0;
-    }
-
-    // center camera
-    if (gMarioStates[0].controller->buttonPressed & L_TRIG) {
-        sRomHackYaw = DEGREES(180 + 90) - gMarioStates[0].intendedYaw;
-        sRomHackYaw = (sRomHackYaw / DEGREES(45)) * DEGREES(45);
     }
 
     // clamp yaw

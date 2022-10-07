@@ -1,4 +1,5 @@
 #include "hardcoded.h"
+#include "engine/surface_collision.h"
 
 #include "levels/bbh/header.h"
 #include "levels/bitdw/header.h"
@@ -33,25 +34,29 @@
 #include "levels/wf/header.h"
 #include "levels/wmotr/header.h"
 
+extern Trajectory sThiHugeMetalBallTraj[];
+extern Trajectory sThiTinyMetalBallTraj[];
+
   ////////////
  // Levels //
 ////////////
 
 struct LevelValues gDefaultLevelValues = {
-    .entryLevel = LEVEL_CASTLE_GROUNDS,
-    .exitCastleLevel = LEVEL_CASTLE,
-    .exitCastleArea = 1,
-    .exitCastleWarpNode = 0x1F,
-    .skipCreditsAt = (LEVEL_MAX+1),
-    .pssSlideStarTime = 630,
-    .pssSlideStarIndex = 1,
+    .fixCollisionBugs         = 0,
+    .entryLevel               = LEVEL_CASTLE_GROUNDS,
+    .exitCastleLevel          = LEVEL_CASTLE,
+    .exitCastleArea           = 1,
+    .exitCastleWarpNode       = 0x1F,
+    .skipCreditsAt            = (LEVEL_MAX+1),
+    .pssSlideStarTime         = 630,
+    .pssSlideStarIndex        = 1,
     .coinsRequiredForCoinStar = 100,
-    .wingCapDuration = 1800,
-    .metalCapDuration = 600,
-    .vanishCapDuration = 600,
-    .wingCapDurationTotwc = 1200,
-    .metalCapDurationCotmc = 600,
-    .vanishCapDurationVcutm = 600,
+    .wingCapDuration          = 1800,
+    .metalCapDuration         = 600,
+    .vanishCapDuration        = 600,
+    .wingCapDurationTotwc     = 1200,
+    .metalCapDurationCotmc    = 600,
+    .vanishCapDurationVcutm   = 600,
     .starPositions = {
         .KoopaBobStarPos      = {  3030.0f,  4500.0f, -4600.0f },
         .KoopaThiStarPos      = {  7100.0f, -1300.0f, -6000.0f },
@@ -84,6 +89,10 @@ struct LevelValues gDefaultLevelValues = {
         .UnagiStarPos         = {  6833.0f, -3654.0f,  2230.0f },
         .JetstreamRingStarPos = {  3400.0f, -3200.0f,  -500.0f },
     },
+    .ceilHeightLimit          = CEIL_HEIGHT_LIMIT,
+    .floorLowerLimit          = FLOOR_LOWER_LIMIT,
+    .floorLowerLimitMisc      = FLOOR_LOWER_LIMIT_MISC,
+    .floorLowerLimitShadow    = FLOOR_LOWER_LIMIT_SHADOW,
 };
 
 struct LevelValues gLevelValues = { 0 };
@@ -93,16 +102,30 @@ struct LevelValues gLevelValues = { 0 };
 ///////////////
 
 struct BehaviorValues gDefaultBehaviorValues = {
-    .KoopaBobAgility     = 4.0f,
-    .KoopaCatchupAgility = 8.0f,
-    .KoopaThiAgility     = 6.0f,
-    .RacingPenguinBigHeight = 250.0f,
-    .RacingPenguinBigRadius = 350.0f,
-    .RacingPenguinHeight = 200.0f,
-    .RacingPenguinRadius = 200.0f,
-    .ToadStar1Requirement = 12,
-    .ToadStar2Requirement = 25,
-    .ToadStar3Requirement = 35,
+    .KoopaBobAgility          = 4.0f,
+    .KoopaCatchupAgility      = 8.0f,
+    .KoopaThiAgility          = 6.0f,
+    .RacingPenguinBigHeight   = 250.0f,
+    .RacingPenguinBigRadius   = 350.0f,
+    .RacingPenguinHeight      = 200.0f,
+    .RacingPenguinRadius      = 200.0f,
+    .ToadStar1Requirement     = 12,
+    .ToadStar2Requirement     = 25,
+    .ToadStar3Requirement     = 35,
+    .KingBobombFVel           = 3.0f,
+    .KingBobombYawVel         = 0x100,
+    .KingBobombHealth         = 3,
+    .KingWhompHealth          = 3,
+    .MipsStar1Requirement     = 15,
+    .MipsStar2Requirement     = 50,
+    .BowlingBallBobSpeed      = 20.0f,
+    .BowlingBallBob2Speed     = 10.0f,
+    .BowlingBallTtmSpeed      = 20.0f,
+    .BowlingBallThiLargeSpeed = 25.0f,
+    .BowlingBallThiSmallSpeed = 10.0f,
+    .GrateStarRequirement     = 120,
+    .ShowStarMilestones       = TRUE,
+    .starsNeededForDialog     = { 1, 3, 8, 30, 50, 70 },
     .dialogs = {
         .BobombBuddyBob1Dialog         = DIALOG_004,
         .BobombBuddyBob2Dialog         = DIALOG_105,
@@ -190,34 +213,36 @@ struct BehaviorValues gDefaultBehaviorValues = {
         .YoshiDialog                   = DIALOG_161,
     },
     .trajectories = {
-        .KoopaBobTrajectory        = (Trajectory*) bob_seg7_trajectory_koopa,
-        .KoopaThiTrajectory        = (Trajectory*) thi_seg7_trajectory_koopa,
-        .UnagiTrajectory           = (Trajectory*) jrb_seg7_trajectory_unagi_1,
-        .Unagi2Trajectory          = (Trajectory*) jrb_seg7_trajectory_unagi_2,
-        .SnowmanHeadTrajectory     = (Trajectory*) ccm_seg7_trajectory_snowman,
-        .RacingPenguinTrajectory   = (Trajectory*) ccm_seg7_trajectory_penguin_race,
-        .BowlingBallBobTrajectory  = (Trajectory*) bob_seg7_metal_ball_path0,
-        .BowlingBallBob2Trajectory = (Trajectory*) bob_seg7_metal_ball_path1,
-        .BowlingBallTtmTrajectory  = (Trajectory*) ttm_seg7_trajectory_070170A0,
-        .MipsTrajectory            = (Trajectory*) inside_castle_seg7_trajectory_mips_0,
-        .Mips2Trajectory           = (Trajectory*) inside_castle_seg7_trajectory_mips_1,
-        .Mips3Trajectory           = (Trajectory*) inside_castle_seg7_trajectory_mips_2,
-        .Mips4Trajectory           = (Trajectory*) inside_castle_seg7_trajectory_mips_3,
-        .Mips5Trajectory           = (Trajectory*) inside_castle_seg7_trajectory_mips_4,
-        .Mips6Trajectory           = (Trajectory*) inside_castle_seg7_trajectory_mips_5,
-        .Mips7Trajectory           = (Trajectory*) inside_castle_seg7_trajectory_mips_6,
-        .Mips8Trajectory           = (Trajectory*) inside_castle_seg7_trajectory_mips_7,
-        .Mips9Trajectory           = (Trajectory*) inside_castle_seg7_trajectory_mips_8,
-        .Mips10Trajectory          = (Trajectory*) inside_castle_seg7_trajectory_mips_9,
-        .PlatformRrTrajectory      = (Trajectory*) rr_seg7_trajectory_0702EC3C,
-        .PlatformRr2Trajectory     = (Trajectory*) rr_seg7_trajectory_0702ECC0,
-        .PlatformRr3Trajectory     = (Trajectory*) rr_seg7_trajectory_0702ED9C,
-        .PlatformRr4Trajectory     = (Trajectory*) rr_seg7_trajectory_0702EEE0,
-        .PlatformCcmTrajectory     = (Trajectory*) ccm_seg7_trajectory_0701669C,
-        .PlatformBitfsTrajectory   = (Trajectory*) bitfs_seg7_trajectory_070159AC,
-        .PlatformHmcTrajectory     = (Trajectory*) hmc_seg7_trajectory_0702B86C,
-        .PlatformLllTrajectory     = (Trajectory*) lll_seg7_trajectory_0702856C,
-        .PlatformLll2Trajectory    = (Trajectory*) lll_seg7_trajectory_07028660,
+        .KoopaBobTrajectory            = (Trajectory*) bob_seg7_trajectory_koopa,
+        .KoopaThiTrajectory            = (Trajectory*) thi_seg7_trajectory_koopa,
+        .UnagiTrajectory               = (Trajectory*) jrb_seg7_trajectory_unagi_1,
+        .Unagi2Trajectory              = (Trajectory*) jrb_seg7_trajectory_unagi_2,
+        .SnowmanHeadTrajectory         = (Trajectory*) ccm_seg7_trajectory_snowman,
+        .RacingPenguinTrajectory       = (Trajectory*) ccm_seg7_trajectory_penguin_race,
+        .BowlingBallBobTrajectory      = (Trajectory*) bob_seg7_metal_ball_path0,
+        .BowlingBallBob2Trajectory     = (Trajectory*) bob_seg7_metal_ball_path1,
+        .BowlingBallTtmTrajectory      = (Trajectory*) ttm_seg7_trajectory_070170A0,
+        .BowlingBallThiLargeTrajectory = (Trajectory*) sThiHugeMetalBallTraj,
+        .BowlingBallThiSmallTrajectory = (Trajectory*) sThiTinyMetalBallTraj,
+        .MipsTrajectory                = (Trajectory*) inside_castle_seg7_trajectory_mips_0,
+        .Mips2Trajectory               = (Trajectory*) inside_castle_seg7_trajectory_mips_1,
+        .Mips3Trajectory               = (Trajectory*) inside_castle_seg7_trajectory_mips_2,
+        .Mips4Trajectory               = (Trajectory*) inside_castle_seg7_trajectory_mips_3,
+        .Mips5Trajectory               = (Trajectory*) inside_castle_seg7_trajectory_mips_4,
+        .Mips6Trajectory               = (Trajectory*) inside_castle_seg7_trajectory_mips_5,
+        .Mips7Trajectory               = (Trajectory*) inside_castle_seg7_trajectory_mips_6,
+        .Mips8Trajectory               = (Trajectory*) inside_castle_seg7_trajectory_mips_7,
+        .Mips9Trajectory               = (Trajectory*) inside_castle_seg7_trajectory_mips_8,
+        .Mips10Trajectory              = (Trajectory*) inside_castle_seg7_trajectory_mips_9,
+        .PlatformRrTrajectory          = (Trajectory*) rr_seg7_trajectory_0702EC3C,
+        .PlatformRr2Trajectory         = (Trajectory*) rr_seg7_trajectory_0702ECC0,
+        .PlatformRr3Trajectory         = (Trajectory*) rr_seg7_trajectory_0702ED9C,
+        .PlatformRr4Trajectory         = (Trajectory*) rr_seg7_trajectory_0702EEE0,
+        .PlatformCcmTrajectory         = (Trajectory*) ccm_seg7_trajectory_0701669C,
+        .PlatformBitfsTrajectory       = (Trajectory*) bitfs_seg7_trajectory_070159AC,
+        .PlatformHmcTrajectory         = (Trajectory*) hmc_seg7_trajectory_0702B86C,
+        .PlatformLllTrajectory         = (Trajectory*) lll_seg7_trajectory_0702856C,
+        .PlatformLll2Trajectory        = (Trajectory*) lll_seg7_trajectory_07028660,
     },
 };
 
@@ -227,6 +252,7 @@ struct BehaviorValues gBehaviorValues = { 0 };
  // functions //
 ///////////////
 
+__attribute__((constructor))
 void hardcoded_reset_default_values(void) {
     gLevelValues = gDefaultLevelValues;
     gBehaviorValues = gDefaultBehaviorValues;

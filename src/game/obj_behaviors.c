@@ -170,9 +170,15 @@ s8 obj_find_wall(f32 objNewX, f32 objY, f32 objNewZ, f32 objVelX, f32 objVelZ) {
         o->oPosY = hitbox.y;
         o->oPosZ = hitbox.z;
 
-        wall_nX = hitbox.walls[0]->normal.x;
-        wall_nY = hitbox.walls[0]->normal.y;
-        wall_nZ = hitbox.walls[0]->normal.z;
+        if (gLevelValues.fixCollisionBugs && hitbox.normalCount > 0) {
+            wall_nX = hitbox.normalAddition[0] / hitbox.normalCount;
+            wall_nY = hitbox.normalAddition[1] / hitbox.normalCount;
+            wall_nZ = hitbox.normalAddition[2] / hitbox.normalCount;
+        } else {
+            wall_nX = hitbox.walls[0]->normal.x;
+            wall_nY = hitbox.walls[0]->normal.y;
+            wall_nZ = hitbox.walls[0]->normal.z;
+        }
 
         objVelXCopy = objVelX;
         objVelZCopy = objVelZ;
@@ -437,7 +443,7 @@ s16 object_step(void) {
     f32 objZ = o->oPosZ;
 
     f32 floorY;
-    f32 waterY = FLOOR_LOWER_LIMIT_MISC;
+    f32 waterY = gLevelValues.floorLowerLimitMisc;
 
     f32 objVelX = o->oForwardVel * sins(o->oMoveAngleYaw);
     f32 objVelZ = o->oForwardVel * coss(o->oMoveAngleYaw);

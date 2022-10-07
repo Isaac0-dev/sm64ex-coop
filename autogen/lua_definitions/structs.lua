@@ -139,6 +139,8 @@
 --- @class BehaviorTrajectories
 --- @field public BowlingBallBob2Trajectory Pointer_Trajectory
 --- @field public BowlingBallBobTrajectory Pointer_Trajectory
+--- @field public BowlingBallThiLargeTrajectory Pointer_Trajectory
+--- @field public BowlingBallThiSmallTrajectory Pointer_Trajectory
 --- @field public BowlingBallTtmTrajectory Pointer_Trajectory
 --- @field public KoopaBobTrajectory Pointer_Trajectory
 --- @field public KoopaThiTrajectory Pointer_Trajectory
@@ -167,17 +169,31 @@
 --- @field public UnagiTrajectory Pointer_Trajectory
 
 --- @class BehaviorValues
+--- @field public BowlingBallBob2Speed number
+--- @field public BowlingBallBobSpeed number
+--- @field public BowlingBallThiLargeSpeed number
+--- @field public BowlingBallThiSmallSpeed number
+--- @field public BowlingBallTtmSpeed number
+--- @field public GrateStarRequirement integer
+--- @field public KingBobombFVel number
+--- @field public KingBobombHealth integer
+--- @field public KingBobombYawVel integer
+--- @field public KingWhompHealth integer
 --- @field public KoopaBobAgility number
 --- @field public KoopaCatchupAgility number
 --- @field public KoopaThiAgility number
+--- @field public MipsStar1Requirement integer
+--- @field public MipsStar2Requirement integer
 --- @field public RacingPenguinBigHeight number
 --- @field public RacingPenguinBigRadius number
 --- @field public RacingPenguinHeight number
 --- @field public RacingPenguinRadius number
+--- @field public ShowStarMilestones integer
 --- @field public ToadStar1Requirement integer
 --- @field public ToadStar2Requirement integer
 --- @field public ToadStar3Requirement integer
 --- @field public dialogs BehaviorDialogs
+--- @field public starsNeededForDialog StarsNeededForDialog
 --- @field public trajectories BehaviorTrajectories
 
 --- @class BullyCollisionData
@@ -311,6 +327,19 @@
 --- @field public stickX number
 --- @field public stickY number
 
+--- @class CustomLevelInfo
+--- @field public acousticReach integer
+--- @field public courseNum integer
+--- @field public echoLevel1 integer
+--- @field public echoLevel2 integer
+--- @field public echoLevel3 integer
+--- @field public fullName string
+--- @field public levelNum integer
+--- @field public next CustomLevelInfo
+--- @field public script Pointer_LevelScript
+--- @field public scriptEntryName string
+--- @field public shortName string
+
 --- @class Cutscene
 --- @field public duration integer
 
@@ -335,6 +364,7 @@
 --- @class GlobalObjectAnimations
 --- @field public amp_seg8_anims_08004034 Pointer_ObjectAnimPointer
 --- @field public birds_seg5_anims_050009E8 Pointer_ObjectAnimPointer
+--- @field public blargg_seg5_anims_0500616C Pointer_ObjectAnimPointer
 --- @field public blue_fish_seg3_anims_0301C2B0 Pointer_ObjectAnimPointer
 --- @field public bobomb_seg8_anims_0802396C Pointer_ObjectAnimPointer
 --- @field public bookend_seg5_anims_05002540 Pointer_ObjectAnimPointer
@@ -349,6 +379,7 @@
 --- @field public chilly_chief_seg6_anims_06003994 Pointer_ObjectAnimPointer
 --- @field public chuckya_seg8_anims_0800C070 Pointer_ObjectAnimPointer
 --- @field public clam_shell_seg5_anims_05001744 Pointer_ObjectAnimPointer
+--- @field public cyan_fish_seg6_anims_0600E264 Pointer_ObjectAnimPointer
 --- @field public door_seg3_anims_030156C0 Pointer_ObjectAnimPointer
 --- @field public dorrie_seg6_anims_0600F638 Pointer_ObjectAnimPointer
 --- @field public eyerok_seg5_anims_050116E4 Pointer_ObjectAnimPointer
@@ -375,6 +406,7 @@
 --- @field public skeeter_seg6_anims_06007DE0 Pointer_ObjectAnimPointer
 --- @field public snowman_seg5_anims_0500D118 Pointer_ObjectAnimPointer
 --- @field public spindrift_seg5_anims_05002D68 Pointer_ObjectAnimPointer
+--- @field public spiny_egg_seg5_anims_050157E4 Pointer_ObjectAnimPointer
 --- @field public spiny_seg5_anims_05016EAC Pointer_ObjectAnimPointer
 --- @field public sushi_seg5_anims_0500AE54 Pointer_ObjectAnimPointer
 --- @field public swoop_seg6_anims_060070D0 Pointer_ObjectAnimPointer
@@ -413,6 +445,7 @@
 --- @field public ddd_seg7_collision_submarine Pointer_Collision
 --- @field public door_seg3_collision_0301CE78 Pointer_Collision
 --- @field public dorrie_seg6_collision_0600F644 Pointer_Collision
+--- @field public dorrie_seg6_collision_0600FBB8 Pointer_Collision
 --- @field public exclamation_box_outline_seg8_collision_08025F78 Pointer_Collision
 --- @field public hmc_seg7_collision_controllable_platform Pointer_Collision
 --- @field public hmc_seg7_collision_controllable_platform_sub Pointer_Collision
@@ -469,6 +502,7 @@
 --- @field public ttm_seg7_collision_pitoune_2 Pointer_Collision
 --- @field public ttm_seg7_collision_podium_warp Pointer_Collision
 --- @field public ttm_seg7_collision_ukiki_cage Pointer_Collision
+--- @field public unknown_seg8_collision_080262F8 Pointer_Collision
 --- @field public warp_pipe_seg3_collision_03009AC8 Pointer_Collision
 --- @field public wdw_seg7_collision_arrow_lift Pointer_Collision
 --- @field public wdw_seg7_collision_express_elevator_platform Pointer_Collision
@@ -494,8 +528,13 @@
 --- @field public camera TextureInfo
 --- @field public coin TextureInfo
 --- @field public lakitu TextureInfo
+--- @field public luigi_head TextureInfo
+--- @field public mario_head TextureInfo
 --- @field public no_camera TextureInfo
 --- @field public star TextureInfo
+--- @field public toad_head TextureInfo
+--- @field public waluigi_head TextureInfo
+--- @field public wario_head TextureInfo
 
 --- @class GraphNode
 --- @field public children GraphNode
@@ -524,6 +563,7 @@
 --- @field public prevTimestamp integer
 --- @field public scale Vec3f
 --- @field public sharedChild GraphNode
+--- @field public skipInViewCheck boolean
 --- @field public skipInterpolationTimestamp integer
 --- @field public unk4C SpawnInfo
 
@@ -583,11 +623,16 @@
 --- @field public yaw integer
 
 --- @class LevelValues
+--- @field public ceilHeightLimit integer
 --- @field public coinsRequiredForCoinStar integer
 --- @field public entryLevel LevelNum
 --- @field public exitCastleArea integer
 --- @field public exitCastleLevel LevelNum
 --- @field public exitCastleWarpNode integer
+--- @field public fixCollisionBugs integer
+--- @field public floorLowerLimit integer
+--- @field public floorLowerLimitMisc integer
+--- @field public floorLowerLimitShadow integer
 --- @field public metalCapDuration integer
 --- @field public metalCapDurationCotmc integer
 --- @field public pssSlideStarIndex integer
@@ -699,6 +744,7 @@
 --- @field public vel Vec3f
 --- @field public wall Surface
 --- @field public wallKickTimer integer
+--- @field public wallNormal Vec3f
 --- @field public wasNetworkVisible integer
 --- @field public waterLevel integer
 
@@ -716,9 +762,8 @@
 
 --- @class ModFile
 --- @field public cachedPath string
---- @field public complete boolean
---- @field public curOffset integer
 --- @field public relativePath string
+--- @field public wroteBytes integer
 
 --- @class ModeTransitionInfo
 --- @field public frame integer
@@ -737,6 +782,7 @@
 --- @field public currLevelAreaSeqId integer
 --- @field public currLevelNum integer
 --- @field public currLevelSyncValid boolean
+--- @field public currPositionValid boolean
 --- @field public description string
 --- @field public descriptionA integer
 --- @field public descriptionB integer
@@ -751,7 +797,10 @@
 --- @field public name string
 --- @field public onRxSeqId integer
 --- @field public overrideModelIndex integer
+--- @field public overridePalette PlayerPalette
 --- @field public overridePaletteIndex integer
+--- @field public overridePaletteIndexLp integer
+--- @field public palette PlayerPalette
 --- @field public paletteIndex integer
 --- @field public type integer
 
@@ -1508,6 +1557,7 @@
 --- @field public platform Object
 --- @field public prevObj Object
 --- @field public respawnInfoType integer
+--- @field public setHome integer
 --- @field public unused1 integer
 --- @field public usingObj Object
 
@@ -1565,6 +1615,8 @@
 --- @field public prevFloorHeight number
 --- @field public prevFloorType integer
 --- @field public waterHeight number
+
+--- @class PlayerPalette
 
 --- @class RayIntersectionInfo
 --- @field public hitPos Vec3f
@@ -1637,6 +1689,14 @@
 --- @field public UnagiStarPos Vec3f
 --- @field public WigglerStarPos Vec3f
 
+--- @class StarsNeededForDialog
+--- @field public dialog1 integer
+--- @field public dialog2 integer
+--- @field public dialog3 integer
+--- @field public dialog4 integer
+--- @field public dialog5 integer
+--- @field public dialog6 integer
+
 --- @class Struct802A272C
 --- @field public vecF Vec3f
 --- @field public vecS Vec3s
@@ -1677,6 +1737,8 @@
 --- @field public posYaw integer
 
 --- @class WallCollisionData
+--- @field public normalAddition Vec3f
+--- @field public normalCount integer
 --- @field public numWalls integer
 --- @field public offsetY number
 --- @field public radius number
@@ -1742,8 +1804,14 @@
 --- @field public y integer
 --- @field public z integer
 
+--- @class Color
+--- @field public b integer
+--- @field public g integer
+--- @field public r integer
+
 --- @class Pointer_integer
 --- @class Pointer_Trajectory
+--- @class Pointer_LevelScript
 --- @class Pointer_ObjectAnimPointer
 --- @class Pointer_Collision
 --- @class Pointer_BehaviorScript

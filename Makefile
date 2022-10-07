@@ -30,9 +30,6 @@ TARGET_N64 = 0
 # Build and optimize for Raspberry Pi(s)
 TARGET_RPI ?= 0
 
-# Build for Emscripten/WebGL
-TARGET_WEB ?= 0
-
 # Makeflag to enable OSX fixes
 OSX_BUILD ?= 0
 
@@ -68,6 +65,8 @@ PROFILE ?= 0
 HEADLESS ?= 0
 # Enable Game ICON
 ICON ?= 1
+# Use .app (mac only)
+USE_APP ?= 1
 # Various workarounds for weird toolchains
 
 NO_BZERO_BCOPY ?= 0
@@ -130,10 +129,8 @@ else
   endif
 endif
 
-ifeq ($(TARGET_WEB),0)
-  ifeq ($(HOST_OS),Windows)
-    WINDOWS_BUILD := 1
-  endif
+ifeq ($(HOST_OS),Windows)
+  WINDOWS_BUILD := 1
 endif
 
 # MXE overrides
@@ -226,7 +223,7 @@ else ifeq ($(DEBUG_INFO_LEVEL),1)
 else ifeq ($(DEBUG_INFO_LEVEL),0)
   # If we're compiling with -0g. I don't believe this will do anything worthwhile.
   OPT_FLAGS += -g0
-else 
+else
   # This is our default AND level 2.
   OPT_FLAGS += -g
 endif
@@ -237,11 +234,9 @@ else
   PROF_FLAGS :=
 endif
 
-ifeq ($(TARGET_WEB),1)
-  OPT_FLAGS := -O2 -g4 --source-map-base http://localhost:8080/
-endif
-
 ifeq ($(TARGET_RPI),1)
+  $(info Compiling for Raspberry Pi)
+  DISCORD_SDK := 0
 	machine = $(shell sh -c 'uname -m 2>/dev/null || echo unknown')
 
     # Raspberry Pi B+, Zero, etc
@@ -251,6 +246,7 @@ ifeq ($(TARGET_RPI),1)
 
     # Raspberry Pi 2 and 3 in ARM 32bit mode
 	ifneq (,$(findstring armv7l,$(machine)))
+  $(info ARM 32bit mode)
 		model = $(shell sh -c 'cat /sys/firmware/devicetree/base/model 2>/dev/null || echo unknown')
 		ifneq (,$(findstring 3,$(model)))
 			 OPT_FLAGS := -march=armv8-a+crc -mtune=cortex-a53 -mfpu=neon-fp-armv8 -O3
@@ -262,6 +258,7 @@ ifeq ($(TARGET_RPI),1)
     # RPi3 or RPi4, in ARM64 (aarch64) mode. NEEDS TESTING 32BIT.
     # DO NOT pass -mfpu stuff here, thats for 32bit ARM only and will fail for 64bit ARM.
 	ifneq (,$(findstring aarch64,$(machine)))
+    $(info ARM64 mode)
 		model = $(shell sh -c 'cat /sys/firmware/devicetree/base/model 2>/dev/null || echo unknown')
 		ifneq (,$(findstring 3,$(model)))
 			 OPT_FLAGS := -march=armv8-a+crc -mtune=cortex-a53 -O3
@@ -319,10 +316,6 @@ ifeq ($(OSX_BUILD),1) # Modify GFX & SDL2 for OSX GL
      DEFINES += OSX_BUILD=1
 endif
 
-ifeq ($(TARGET_WEB),1)
-     DEFINES := $(DEFINES) -DTARGET_WEB -DUSE_GLES
-endif
-
 # Check backends
 
 ifneq (,$(filter $(RENDER_API),D3D11 D3D12))
@@ -355,12 +348,7 @@ ifeq ($(HEADLESS),1)
   RENDER_API := DUMMY
   WINDOW_API := DUMMY
   AUDIO_API := DUMMY
-  CONTROLLER_API := 
-endif
-
-ifeq ($(TARGET_RPI),1)
-  $(info Compiling for Raspberry Pi)
-    DISCORD_SDK := 0
+  CONTROLLER_API :=
 endif
 
 # NON_MATCHING - whether to build a matching, identical copy of the ROM
@@ -385,11 +373,20 @@ endif
 COMPARE ?= 1
 $(eval $(call validate-option,COMPARE,0 1))
 
+ifeq ($(OSX_BUILD),0)
+	USE_APP := 0
+endif
+
+ifeq ($(USE_APP),0)
 TARGET_STRING := sm64.$(VERSION).$(GRUCODE)
+else
+TARGET_STRING := sm64.$(VERSION).$(GRUCODE).app
+endif
 # If non-default settings were chosen, disable COMPARE
 ifeq ($(filter $(TARGET_STRING), sm64.jp.f3d_old sm64.us.f3d_old sm64.eu.f3d_new sm64.sh.f3d_new),)
   COMPARE := 0
 endif
+
 
 # Whether to hide commands or not
 VERBOSE ?= 0
@@ -479,23 +476,15 @@ _ := $(shell $(PYTHON) $(TOOLS_DIR)/copy_mario_sounds.py)
 
 BUILD_DIR_BASE := build
 # BUILD_DIR is the location where all build artifacts are placed
-ifeq ($(TARGET_WEB),1)
-  BUILD_DIR := $(BUILD_DIR_BASE)/$(VERSION)_web
-else
-  BUILD_DIR := $(BUILD_DIR_BASE)/$(VERSION)_pc
-endif
+BUILD_DIR := $(BUILD_DIR_BASE)/$(VERSION)_pc
 
-ifeq ($(TARGET_WEB),1)
-	EXE := $(BUILD_DIR)/$(TARGET_STRING).html
-else
-	ifeq ($(WINDOWS_BUILD),1)
-		EXE := $(BUILD_DIR)/$(TARGET_STRING).exe
-	else # Linux builds/binary namer
-		ifeq ($(TARGET_RPI),1)
-			EXE := $(BUILD_DIR)/$(TARGET_STRING).arm
-		else
-			EXE := $(BUILD_DIR)/$(TARGET_STRING)
-		endif
+ifeq ($(WINDOWS_BUILD),1)
+	EXE := $(BUILD_DIR)/$(TARGET_STRING).exe
+else # Linux builds/binary namer
+	ifeq ($(TARGET_RPI),1)
+		EXE := $(BUILD_DIR)/$(TARGET_STRING).arm
+	else
+		EXE := $(BUILD_DIR)/$(TARGET_STRING)
 	endif
 endif
 
@@ -595,7 +584,7 @@ RPC_LIBS :=
 #ifeq ($(DISCORDRPC),1)
 #  ifeq ($(WINDOWS_BUILD),1)
 #    RPC_LIBS := lib/discord/libdiscord-rpc.dll
-#  else ifeq ($(OSX_BUILD),1) 
+#  else ifeq ($(OSX_BUILD),1)
 #    # needs testing
 #    RPC_LIBS := lib/discord/libdiscord-rpc.dylib
 #  else
@@ -636,7 +625,11 @@ else ifeq ($(OSX_BUILD),1)
   # This really shouldn't be required, but I got tired of trying to do it the "right way"
   BASS_LIBS := lib/bass/bass.dylib lib/bass/libbass.dylib lib/bass/bass_fx.dylib lib/bass/libbass_fx.dylib
 else ifeq ($(TARGET_RPI),1)
-  BASS_LIBS := lib/bass/arm/libbass.so lib/bass/arm/libbass_fx.so
+	ifneq (,$(findstring aarch64,$(machine)))
+    BASS_LIBS := lib/bass/arm/aarch64/libbass.so lib/bass/arm/aarch64/libbass_fx.so
+  else
+    BASS_LIBS := lib/bass/arm/libbass.so lib/bass/arm/libbass_fx.so
+  endif
 else
   BASS_LIBS := lib/bass/libbass.so lib/bass/libbass_fx.so
 endif
@@ -680,15 +673,16 @@ ifeq ($(WINDOWS_AUTO_BUILDER),1)
 else ifeq ($(COMPILER),gcc)
   CC      := $(CROSS)gcc
   CXX     := $(CROSS)g++
-  EXTRA_CFLAGS += -Wno-unused-result -Wno-format-truncation
+  ifeq ($(OSX_BUILD),0)
+	EXTRA_CFLAGS += -Wno-unused-result -Wno-format-truncation
+  else
+	EXTRA_CFLAGS += -Wno-unused-result
+  endif
 else ifeq ($(COMPILER),clang)
   CC      := clang
   CXX     := clang++
   CPP     := clang++
   EXTRA_CFLAGS += -Wno-unused-function -Wno-unused-variable -Wno-unknown-warning-option -Wno-self-assign -Wno-unknown-pragmas -Wno-unused-result
-else ifeq ($(TARGET_WEB),1) # As in, web PC port
-  CC     := emcc
-  CXX    := emcc
 else
   ifeq ($(USE_QEMU_IRIX),1)
     IRIX_ROOT := $(TOOLS_DIR)/ido5.3_compiler
@@ -812,7 +806,7 @@ ifeq ($(SDL1_USED)$(SDL2_USED),11)
 endif
 
 # SDL can be used by different systems, so we consolidate all of that shit into this
- 
+
 ifeq ($(SDL2_USED),1)
   SDLCONFIG := $(CROSS)sdl2-config
   BACKEND_CFLAGS += -DHAVE_SDL2=1
@@ -829,7 +823,7 @@ ifneq ($(SDL1_USED)$(SDL2_USED),00)
   else
     BACKEND_CFLAGS += `$(SDLCONFIG) --cflags`
   endif
-  
+
   ifeq ($(WINDOWS_BUILD),1)
     BACKEND_LDFLAGS += `$(SDLCONFIG) --static-libs` -lsetupapi -luser32 -limm32 -lole32 -loleaut32 -lshell32 -lwinmm -lversion
   else
@@ -850,9 +844,6 @@ ifeq ($(WINDOWS_BUILD),1)
   ifeq ($(TARGET_BITS), 32)
     BACKEND_LDFLAGS += -ldbghelp
   endif
-else ifeq ($(TARGET_WEB),1)
-  CC_CHECK_CFLAGS := -fsyntax-only -fsigned-char $(BACKEND_CFLAGS) $(DEF_INC_CFLAGS) -Wall -Wextra -Wno-format-security $(TARGET_CFLAGS) -s USE_SDL=2
-  CFLAGS := $(OPT_FLAGS) $(DEF_INC_CFLAGS) $(BACKEND_CFLAGS) $(TARGET_CFLAGS) -fno-strict-aliasing -fwrapv -s USE_SDL=2
 else ifeq ($(TARGET_N64),0) # Linux / Other builds below
   CC_CHECK_CFLAGS := -fsyntax-only -fsigned-char $(BACKEND_CFLAGS) $(DEF_INC_CFLAGS) -Wall -Wextra $(TARGET_CFLAGS)
   CFLAGS := $(OPT_FLAGS) $(DEF_INC_CFLAGS) $(BACKEND_CFLAGS) $(TARGET_CFLAGS) -fno-strict-aliasing -fwrapv
@@ -871,7 +862,7 @@ ifeq ($(TARGET_N64),1)
   RSPASMFLAGS := $(foreach d,$(DEFINES),-definelabel $(subst =, ,$(d)))
 else
   ASFLAGS     := $(foreach i,$(INCLUDE_DIRS),-I$(i)) $(foreach d,$(DEFINES),--defsym $(d))
-  RSPASMFLAGS := 
+  RSPASMFLAGS :=
 endif
 
 # C preprocessor flags
@@ -887,9 +878,7 @@ ifeq ($(TARGET_N64),1)
   endif
 endif
 
-ifeq ($(TARGET_WEB),1)
-  LDFLAGS := -lm -lGL -lSDL2 -no-pie -s TOTAL_MEMORY=20MB -g4 --source-map-base http://localhost:8080/ -s "EXTRA_EXPORTED_RUNTIME_METHODS=['callMain']"
-else ifeq ($(WINDOWS_BUILD),1)
+ifeq ($(WINDOWS_BUILD),1)
   LDFLAGS := $(BITS) -march=$(TARGET_ARCH) -Llib -lpthread $(BACKEND_LDFLAGS) -static
   ifeq ($(CROSS),)
     LDFLAGS += -no-pie
@@ -923,6 +912,9 @@ endif
 
 # Coop specific libraries
 
+# Zlib
+LDFLAGS += -lz
+
 # Lua
 ifeq ($(WINDOWS_BUILD),1)
   ifeq ($(TARGET_BITS), 32)
@@ -933,7 +925,11 @@ ifeq ($(WINDOWS_BUILD),1)
 else ifeq ($(OSX_BUILD),1)
   LDFLAGS += -L./lib/lua/mac/ -l lua53
 else ifeq ($(TARGET_RPI),1)
-  LDFLAGS += -Llib/lua/linux -l:liblua53-arm.a
+	ifneq (,$(findstring aarch64,$(machine)))
+    LDFLAGS += -Llib/lua/linux -l:liblua53-arm64.a
+  else
+    LDFLAGS += -Llib/lua/linux -l:liblua53-arm.a
+  endif
 else
   LDFLAGS += -Llib/lua/linux -l:liblua53.a
 endif
@@ -1185,13 +1181,12 @@ endif
 
 clean:
 	$(RM) -r $(BUILD_DIR_BASE)
-	
+
 cleantools:
 	$(MAKE) -s -C $(TOOLS_DIR) clean
 
-distclean: clean
+distclean: clean cleantools
 	$(PYTHON) extract_assets.py --clean
-	cleantools
 
 test: $(ROM)
 	$(EMULATOR) $(EMU_FLAGS) $<
@@ -1203,7 +1198,7 @@ libultra: $(BUILD_DIR)/libultra.a
 
 $(BUILD_DIR)/$(RPC_LIBS):
 	@$(CP) -f $(RPC_LIBS) $(BUILD_DIR)
-	
+
 $(BUILD_DIR)/$(DISCORD_SDK_LIBS):
 	@$(CP) -f $(DISCORD_SDK_LIBS) $(BUILD_DIR)
 
@@ -1284,7 +1279,7 @@ else
   $(BUILD_DIR)/%: %.png
 	$(call print,Converting:,$<,$@)
 	$(V)$(N64GRAPHICS) -s raw -i $@ -g $< -f $(lastword $(subst ., ,$@))
-	
+
   $(BUILD_DIR)/%.inc.c: %.png
 	$(call print,Converting:,$<,$@)
 	$(V)$(N64GRAPHICS) -s $(TEXTURE_ENCODING) -i $@ -g $< -f $(lastword ,$(subst ., ,$(basename $<)))
@@ -1338,7 +1333,7 @@ $(BUILD_DIR)/%.mio0: $(BUILD_DIR)/%.bin
 $(BUILD_DIR)/%.mio0.o: $(BUILD_DIR)/%.mio0
 	$(call print,Converting MIO0 to ELF:,$<,$@)
 	$(V)printf ".section .data\n\n.incbin \"$<\"\n" | $(AS) $(ASFLAGS) -o $@
-	
+
 endif
 
 
@@ -1539,7 +1534,7 @@ endif
 $(BUILD_DIR)/$(LD_SCRIPT): $(LD_SCRIPT)
 	$(call print,Preprocessing linker script:,$<,$@)
 	$(V)$(CPP) $(PROF_FLAGS) $(CPPFLAGS) -DBUILD_DIR=$(BUILD_DIR) -MMD -MP -MT $@ -MF $@.d -o $@ $<
-	
+
 # Assemble assembly code
 $(BUILD_DIR)/%.o: %.s
 	$(call print,Assembling:,$<,$@)
@@ -1550,7 +1545,7 @@ ifeq ($(TARGET_N64),1)
   $(BUILD_DIR)/rsp/%.bin $(BUILD_DIR)/rsp/%_data.bin: rsp/%.s
 	$(call print,Assembling:,$<,$@)
 	$(V)$(RSPASM) -sym $@.sym $(RSPASMFLAGS) -strequ CODE_FILE $(BUILD_DIR)/rsp/$*.bin -strequ DATA_FILE $(BUILD_DIR)/rsp/$*_data.bin $<
-	
+
   # Link libultra
   $(BUILD_DIR)/libultra.a: $(ULTRA_O_FILES)
 	@$(PRINT) "$(GREEN)Linking libultra:  $(BLUE)$@ $(NO_COL)\n"
@@ -1561,7 +1556,7 @@ ifeq ($(TARGET_N64),1)
   $(BUILD_DIR)/libgoddard.a: $(GODDARD_O_FILES)
 	@$(PRINT) "$(GREEN)Linking libgoddard:  $(BLUE)$@ $(NO_COL)\n"
 	$(V)$(AR) rcs -o $@ $(GODDARD_O_FILES)
-	
+
   # Link SM64 ELF file
   $(ELF): $(O_FILES) $(MIO0_OBJ_FILES) $(SEG_FILES) $(BUILD_DIR)/$(LD_SCRIPT) undefined_syms.txt $(BUILD_DIR)/libultra.a $(BUILD_DIR)/libgoddard.a
 	@$(PRINT) "$(GREEN)Linking ELF file:  $(BLUE)$@ $(NO_COL)\n"
@@ -1572,7 +1567,7 @@ ifeq ($(TARGET_N64),1)
 	$(call print,Building ROM:,$<,$@)
 	$(V)$(OBJCOPY) --pad-to=0x800000 --gap-fill=0xFF $< $(@:.z64=.bin) -O binary
 	$(V)$(N64CKSUM) $(@:.z64=.bin) $@
-	
+
   $(BUILD_DIR)/$(TARGET).objdump: $(ELF)
 	$(OBJDUMP) -D $< > $@
 else

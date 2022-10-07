@@ -62,11 +62,11 @@ void camera_config_set_pan_level(u32 value);
 void camera_config_set_deceleration(u32 value);
 
 bool is_game_paused(void);
+bool is_transition_playing(void);
 
-bool warp_to_level(s32 aLevel, s32 aArea, s32 aAct);
-bool warp_restart_level(void);
-bool warp_exit_level(s32 aDelay);
-bool warp_to_castle(s32 aLevel);
+s16 get_dialog_id(void);
+s32 get_last_star_or_key(void);
+void set_last_star_or_key(u8 value);
 
 u32 allocate_mario_action(u32 actFlags);
 
@@ -84,6 +84,8 @@ void set_environment_region(u8 index, s32 value);
 void set_override_fov(f32 fov);
 void set_override_near(f32 near);
 void set_override_far(f32 far);
+
+void add_scroll_target(u32 index, const char* name, u32 offset, u32 size);
 
 void play_transition(s16 transType, s16 time, u8 red, u8 green, u8 blue);
 

@@ -303,6 +303,14 @@ s64 DynOS_Gfx_ParseGfxConstants(const String& _Arg, bool* found) {
     gfx_constant(G_SCALE_FRAC);
     gfx_constant(G_ROTATE_FRAC);
 
+    // Player parts
+    gfx_constant(PANTS);
+    gfx_constant(SHIRT);
+    gfx_constant(GLOVES);
+    gfx_constant(SHOES);
+    gfx_constant(HAIR);
+    gfx_constant(SKIN);
+
     // Common values
     gfx_constant(CALC_DXT(4,G_IM_SIZ_4b_BYTES));
     gfx_constant(CALC_DXT(8,G_IM_SIZ_4b_BYTES));
@@ -732,8 +740,10 @@ static void ParseGfxSymbol(GfxData* aGfxData, DataNode<Gfx>* aNode, Gfx*& aHead,
     gfx_symbol_4(gsDPSetFogColor);
     gfx_symbol_2(gsSPFogPosition, false);
     gfx_symbol_1(gsDPSetAlphaCompare, false);
+    gfx_symbol_1(gsDPSetTextureFilter, false);
 
     gfx_symbol_2(gsSPCopyLightEXT, false);
+    gfx_symbol_1(gsSPCopyLightsPlayerPart, false);
     gfx_symbol_2(gsSPFogFactor, false);
     gfx_symbol_1(gsDPSetTextureLOD, false);
     gfx_symbol_3(gsMoveWd, false);
@@ -937,23 +947,23 @@ DataNode<Gfx>* DynOS_Gfx_Parse(GfxData* aGfxData, DataNode<Gfx>* aNode) {
  // Writing //
 /////////////
 
-void DynOS_Gfx_Write(FILE *aFile, GfxData *aGfxData, DataNode<Gfx> *aNode) {
+void DynOS_Gfx_Write(BinFile *aFile, GfxData *aGfxData, DataNode<Gfx> *aNode) {
     if (!aNode->mData) return;
 
     // Header
-    WriteBytes<u8>(aFile, DATA_TYPE_DISPLAY_LIST);
+    aFile->Write<u8>(DATA_TYPE_DISPLAY_LIST);
     aNode->mName.Write(aFile);
 
     // Data
-    WriteBytes<u32>(aFile, aNode->mSize);
+    aFile->Write<u32>(aNode->mSize);
     for (u32 i = 0; i != aNode->mSize; ++i) {
         Gfx *_Head = &aNode->mData[i];
         if (aGfxData->mPointerList.Find((void *) _Head) != -1) {
-            WriteBytes<u32>(aFile, _Head->words.w0);
+            aFile->Write<u32>(_Head->words.w0);
             DynOS_Pointer_Write(aFile, (const void *) _Head->words.w1, aGfxData);
         } else {
-            WriteBytes<u32>(aFile, _Head->words.w0);
-            WriteBytes<u32>(aFile, _Head->words.w1);
+            aFile->Write<u32>(_Head->words.w0);
+            aFile->Write<u32>(_Head->words.w1);
         }
     }
 }
@@ -961,18 +971,18 @@ void DynOS_Gfx_Write(FILE *aFile, GfxData *aGfxData, DataNode<Gfx> *aNode) {
  // Reading //
 /////////////
 
-void DynOS_Gfx_Load(FILE *aFile, GfxData *aGfxData) {
+void DynOS_Gfx_Load(BinFile *aFile, GfxData *aGfxData) {
     DataNode<Gfx> *_Node = New<DataNode<Gfx>>();
 
     // Name
     _Node->mName.Read(aFile);
 
     // Data
-    _Node->mSize = ReadBytes<u32>(aFile);
+    _Node->mSize = aFile->Read<u32>();
     _Node->mData = New<Gfx>(_Node->mSize);
     for (u32 i = 0; i != _Node->mSize; ++i) {
-        u32 _WordsW0 = ReadBytes<u32>(aFile);
-        u32 _WordsW1 = ReadBytes<u32>(aFile);
+        u32 _WordsW0 = aFile->Read<u32>();
+        u32 _WordsW1 = aFile->Read<u32>();
         void *_Ptr = DynOS_Pointer_Load(aFile, aGfxData, _WordsW1, &_Node->mFlags);
         if (_Ptr) {
             _Node->mData[i].words.w0 = (uintptr_t) _WordsW0;

@@ -36,7 +36,7 @@
 void add_tree_leaf_particles(struct MarioState *m) {
     f32 leafHeight;
 
-    if (m->usedObj != NULL && m->usedObj->behavior == segmented_to_virtual(bhvTree)) {
+    if (m->usedObj != NULL && m->usedObj->behavior == segmented_to_virtual(smlua_override_behavior(bhvTree))) {
         // make leaf effect spawn higher on the Shifting Sand Land palm tree
         if (gCurrLevelNum == LEVEL_SSL) {
             leafHeight = 250.0f;
@@ -50,7 +50,7 @@ void add_tree_leaf_particles(struct MarioState *m) {
 }
 
 void play_climbing_sounds(struct MarioState *m, s32 b) {
-    s32 isOnTree = (m->usedObj != NULL && m->usedObj->behavior == segmented_to_virtual(bhvTree));
+    s32 isOnTree = (m->usedObj != NULL && m->usedObj->behavior == segmented_to_virtual(smlua_override_behavior(bhvTree)));
 
     if (b == 1) {
         if (is_anim_past_frame(m, 1)) {
@@ -97,7 +97,7 @@ s32 set_pole_position(struct MarioState *m, f32 offsetY) {
     collided = f32_find_wall_collision(&m->pos[0], &m->pos[1], &m->pos[2], 60.0f, 50.0f);
     collided |= f32_find_wall_collision(&m->pos[0], &m->pos[1], &m->pos[2], 30.0f, 24.0f);
 
-    ceilHeight = vec3f_find_ceil(m->pos, m->pos[1], &ceil);
+    ceilHeight = vec3f_mario_ceil(m->pos, m->pos[1], &ceil);
     if (m->pos[1] > ceilHeight - 160.0f) {
         m->pos[1] = ceilHeight - 160.0f;
         marioObj->oMarioPolePos = m->pos[1] - m->usedObj->oPosY;
@@ -169,7 +169,7 @@ s32 act_holding_pole(struct MarioState *m) {
             return set_mario_action(m, ACT_CLIMBING_POLE, 0);
         }
 
-        if (poleBehavior != bhvGiantPole && m->controller->stickY > 50.0f) {
+        if (poleBehavior != smlua_override_behavior(bhvGiantPole) && m->controller->stickY > 50.0f) {
             return set_mario_action(m, ACT_TOP_OF_POLE_TRANSITION, 0);
         }
     }
@@ -183,7 +183,7 @@ s32 act_holding_pole(struct MarioState *m) {
         m->faceAngle[1] += marioObj->oMarioPoleYawVel;
         marioObj->oMarioPolePos -= marioObj->oMarioPoleYawVel / 0x100;
 
-        if (m->usedObj->behavior == segmented_to_virtual(bhvTree)) {
+        if (m->usedObj->behavior == segmented_to_virtual(smlua_override_behavior(bhvTree))) {
             //! The Shifting Sand Land palm tree check is done climbing up in
             // add_tree_leaf_particles, but not here, when climbing down.
             if (m->pos[1] - m->floorHeight > 100.0f) {
@@ -331,9 +331,14 @@ s32 perform_hanging_step(struct MarioState *m, Vec3f nextPos) {
 
     smlua_call_event_hooks_mario_param(HOOK_BEFORE_PHYS_STEP, m);
 
-    m->wall = resolve_and_return_wall_collisions(nextPos, 50.0f, 50.0f);
+    struct WallCollisionData wcd = { 0 };
+    resolve_and_return_wall_collisions_data(nextPos, 50.0f, 50.0f, &wcd);
+    m->wall = (wcd.numWalls > 0)
+            ? wcd.walls[wcd.numWalls - 1]
+            : NULL;
+
     floorHeight = find_floor(nextPos[0], nextPos[1], nextPos[2], &floor);
-    ceilHeight = vec3f_find_ceil(nextPos, floorHeight, &ceil);
+    ceilHeight = vec3f_mario_ceil(nextPos, floorHeight, &ceil);
 
     if (floor == NULL) {
         return HANG_HIT_CEIL_OR_OOB;
@@ -1018,7 +1023,7 @@ s32 act_bubbled(struct MarioState* m) {
 
     // make invisible on -1 lives
     if (m->playerIndex == 0) {
-        if (m->numLives == -1) {
+        if (m->numLives <= -1) {
             m->marioObj->header.gfx.node.flags |= GRAPH_RENDER_INVISIBLE;
             level_trigger_warp(m, WARP_OP_DEATH);
             return set_mario_action(m, ACT_SOFT_BONK, 0);
@@ -1067,7 +1072,7 @@ s32 mario_execute_automatic_action(struct MarioState *m) {
 
     m->quicksandDepth = 0.0f;
 
-    if (!smlua_call_action_hook(m, &cancel)) {
+    if (!smlua_call_action_hook(ACTION_HOOK_EVERY_FRAME, m, &cancel)) {
         /* clang-format off */
         switch (m->action) {
             case ACT_HOLDING_POLE:           cancel = act_holding_pole(m);           break;

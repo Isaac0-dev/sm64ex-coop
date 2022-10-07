@@ -51,7 +51,7 @@ void bhv_water_splash_spawn_droplets(void) {
     if (o->oTimer == 0)
         o->oPosY = find_water_level(o->oPosX, o->oPosZ);
 
-    if (o->oPosY > FLOOR_LOWER_LIMIT_MISC) // Make sure it is not at the default water level
+    if (o->oPosY > gLevelValues.floorLowerLimitMisc) // Make sure it is not at the default water level
         for (i = 0; i < 3; i++)
             spawn_water_droplet(o, &sWaterSplashDropletParams);
 }
@@ -88,12 +88,12 @@ void bhv_water_droplet_loop(void) {
         } else if (o->oTimer > 20)
             obj_mark_for_deletion(o);
     }
-    if (waterLevel < FLOOR_LOWER_LIMIT_MISC)
+    if (waterLevel < gLevelValues.floorLowerLimitMisc)
         obj_mark_for_deletion(o);
 }
 
 void bhv_idle_water_wave_loop(void) {
-    if (o->parentObj == NULL || o->parentObj->behavior != bhvMario) {
+    if (o->parentObj == NULL || o->parentObj->behavior != smlua_override_behavior(bhvMario)) {
         obj_mark_for_deletion(o);
         return;
     }

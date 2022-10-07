@@ -22,6 +22,7 @@
 #include "pc/configfile.h"
 #include "pc/network/network.h"
 #include "pc/lua/smlua.h"
+#include "pc/cheats.h"
 
 void play_flip_sounds(struct MarioState *m, s16 frame1, s16 frame2, s16 frame3) {
     s32 animFrame = m->marioObj->header.gfx.animInfo.animFrame;
@@ -52,7 +53,8 @@ void play_knockback_sound(struct MarioState *m) {
 #endif
 
 s32 lava_boost_on_wall(struct MarioState *m) {
-    m->faceAngle[1] = atan2s(m->wall->normal.z, m->wall->normal.x);
+    if (Cheats.enabled && Cheats.godMode) { return FALSE; }
+    m->faceAngle[1] = atan2s(m->wallNormal[2], m->wallNormal[0]);
 
     if (m->forwardVel < 24.0f) {
         m->forwardVel = 24.0f;
@@ -68,6 +70,8 @@ s32 lava_boost_on_wall(struct MarioState *m) {
 }
 
 s32 check_fall_damage(struct MarioState *m, u32 hardFallAction) {
+    if (Cheats.enabled && Cheats.godMode) { return FALSE; }
+    
     f32 fallHeight;
     f32 damageHeight;
 
@@ -1955,7 +1959,7 @@ s32 act_flying(struct MarioState *m) {
 }
 
 s32 act_riding_hoot(struct MarioState *m) {
-    if (m->usedObj == NULL || m->usedObj->behavior != bhvHoot) {
+    if (m->usedObj == NULL || m->usedObj->behavior != smlua_override_behavior(bhvHoot)) {
         m->usedObj = cur_obj_nearest_object_with_behavior(bhvHoot);
         if (m->usedObj == NULL) { return FALSE; }
         m->usedObj->heldByPlayerIndex = m->playerIndex;
@@ -2200,7 +2204,7 @@ s32 mario_execute_airborne_action(struct MarioState *m) {
 
     play_far_fall_sound(m);
 
-    if (!smlua_call_action_hook(m, (s32*)&cancel)) {
+    if (!smlua_call_action_hook(ACTION_HOOK_EVERY_FRAME, m, (s32*)&cancel)) {
         /* clang-format off */
         switch (m->action) {
             case ACT_JUMP:                 cancel = act_jump(m);                 break;

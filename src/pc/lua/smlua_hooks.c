@@ -1,4 +1,5 @@
 #include "smlua.h"
+#include "behavior_commands.h"
 #include "pc/mods/mod.h"
 #include "src/game/object_list_processor.h"
 #include "pc/djui/djui_chat_message.h"
@@ -84,7 +85,7 @@ struct LuaHookedEvent {
 
 static struct LuaHookedEvent sHookedEvents[HOOK_MAX] = { 0 };
 
-static int smlua_call_hook(lua_State* L, int nargs, int nresults, int errfunc, struct Mod* activeMod) {
+int smlua_call_hook(lua_State* L, int nargs, int nresults, int errfunc, struct Mod* activeMod) {
     struct Mod* prev = gLuaActiveMod;
     gLuaActiveMod = activeMod;
     gLuaLastHookMod = activeMod;
@@ -476,6 +477,35 @@ void smlua_call_event_hooks_set_camera_mode_params(enum LuaHookedEventType hookT
     }
 }
 
+void smlua_call_event_hooks_int_params_ret_bool(enum LuaHookedEventType hookType, s16 param, bool* returnValue) {
+    lua_State* L = gLuaState;
+    if (L == NULL) { return; }
+    *returnValue = true;
+
+    struct LuaHookedEvent* hook = &sHookedEvents[hookType];
+    for (int i = 0; i < hook->count; i++) {
+        s32 prevTop = lua_gettop(L);
+
+        // push the callback onto the stack
+        lua_rawgeti(L, LUA_REGISTRYINDEX, hook->reference[i]);
+
+        // push params
+        lua_pushinteger(L, param);
+
+        // call the callback
+        if (0 != smlua_call_hook(L, 1, 1, 0, hook->mod[i])) {
+            LOG_LUA("Failed to call the callback: %u", hookType);
+            continue;
+        }
+
+        // output the return value
+        if (lua_type(L, -1) == LUA_TBOOLEAN) {
+            *returnValue = smlua_to_boolean(L, -1);
+        }
+        lua_settop(L, prevTop);
+    }
+}
+
 void smlua_call_event_hooks_value_param(enum LuaHookedEventType hookType, int modIndex, int valueIndex) {
     lua_State* L = gLuaState;
     if (L == NULL) { return; }
@@ -496,6 +526,35 @@ void smlua_call_event_hooks_value_param(enum LuaHookedEventType hookType, int mo
     }
 }
 
+void smlua_call_event_hooks_use_act_select(enum LuaHookedEventType hookType, int value, bool* foundHook, bool* returnValue) {
+    lua_State* L = gLuaState;
+    *foundHook = false;
+    if (L == NULL) { return; }
+    struct LuaHookedEvent* hook = &sHookedEvents[hookType];
+    for (int i = 0; i < hook->count; i++) {
+        s32 prevTop = lua_gettop(L);
+
+        // push the callback onto the stack
+        lua_rawgeti(L, LUA_REGISTRYINDEX, hook->reference[i]);
+
+        // push value
+        lua_pushinteger(L, value);
+
+        // call the callback
+        if (0 != smlua_call_hook(L, 1, 1, 0, hook->mod[i])) {
+            LOG_LUA("Failed to call the callback: %u", hookType);
+            continue;
+        }
+
+        // output the return value
+        if (lua_type(L, -1) == LUA_TBOOLEAN) {
+            *foundHook = true;
+            *returnValue = smlua_to_boolean(L, -1);
+        }
+        lua_settop(L, prevTop);
+    }
+}
+
   ////////////////////
  // hooked actions //
 ////////////////////
@@ -503,7 +562,7 @@ void smlua_call_event_hooks_value_param(enum LuaHookedEventType hookType, int mo
 struct LuaHookedMarioAction {
     u32 action;
     u32 interactionType;
-    int reference;
+    int actionHookRefs[ACTION_HOOK_MAX];
     struct Mod* mod;
 };
 
@@ -535,11 +594,11 @@ int smlua_hook_mario_action(lua_State* L) {
         return 0;
     }
 
-    lua_pushvalue(L, 2);
-    int ref = luaL_ref(L, LUA_REGISTRYINDEX);
+    int secondParamType = lua_type(L, 2);
+    bool oldApi = secondParamType == LUA_TFUNCTION;
 
-    if (ref == -1) {
-        LOG_LUA_LINE("Hook Action: %lld tried to hook undefined function", action);
+    if (!oldApi && secondParamType != LUA_TTABLE) {
+        LOG_LUA_LINE("smlua_hook_mario_action received improper type '%d'", lua_type(L, 2));
         return 0;
     }
 
@@ -553,9 +612,45 @@ int smlua_hook_mario_action(lua_State* L) {
     }
 
     struct LuaHookedMarioAction* hooked = &sHookedMarioActions[sHookedMarioActionsCount];
+
+    // Support calling the function with just one function corresponding to the "every frame" hook instead of a full
+    // table with all hooks
+    if (oldApi) {
+        for (int i = 0; i < ACTION_HOOK_MAX; i++) {
+            hooked->actionHookRefs[i] = LUA_NOREF;
+        }
+
+        lua_pushvalue(L, 2);
+        int ref = luaL_ref(L, LUA_REGISTRYINDEX);
+
+        if (ref == -1) {
+            LOG_LUA_LINE("Hook Action: %lld tried to hook undefined function", action);
+            return 0;
+        }
+
+        hooked->actionHookRefs[ACTION_HOOK_EVERY_FRAME] = ref;
+    }
+    else {
+        for (int i = 0; i < ACTION_HOOK_MAX; i++) {
+            lua_pushstring(L, LuaActionHookTypeArgName[i]);
+
+            if (lua_gettable(L, 2) == LUA_TNIL) {
+                hooked->actionHookRefs[i] = LUA_NOREF;
+            } else {
+                int ref = luaL_ref(L, LUA_REGISTRYINDEX);
+
+                if (ref == -1) {
+                    LOG_LUA_LINE("Hook Action: %lld tried to hook undefined function", action);
+                    return 0;
+                }
+
+                hooked->actionHookRefs[i] = ref;
+            }
+        }
+    }
+
     hooked->action = action;
     hooked->interactionType = interactionType;
-    hooked->reference = ref;
     hooked->mod = gLuaActiveMod;
     if (!gSmLuaConvertSuccess) { return 0; }
 
@@ -563,14 +658,16 @@ int smlua_hook_mario_action(lua_State* L) {
     return 1;
 }
 
-bool smlua_call_action_hook(struct MarioState* m, s32* returnValue) {
+bool smlua_call_action_hook(enum LuaActionHookType hookType, struct MarioState* m, s32* returnValue) {
     lua_State* L = gLuaState;
     if (L == NULL) { return false; }
+
+    //TODO GAG: Set up things such that O(n) check isn't performed on every action hook? Maybe in MarioState?
     for (int i = 0; i < sHookedMarioActionsCount; i++) {
         struct LuaHookedMarioAction* hook = &sHookedMarioActions[i];
-        if (hook->action == m->action) {
+        if (hook->action == m->action && hook->actionHookRefs[hookType] != LUA_NOREF) {
             // push the callback onto the stack
-            lua_rawgeti(L, LUA_REGISTRYINDEX, hook->reference);
+            lua_rawgeti(L, LUA_REGISTRYINDEX, hook->actionHookRefs[hookType]);
 
             // push mario state
             lua_getglobal(L, "gMarioStates");
@@ -617,11 +714,13 @@ u32 smlua_get_action_interaction_type(struct MarioState* m) {
 struct LuaHookedBehavior {
     u32 behaviorId;
     u32 overrideId;
-    BehaviorScript behavior[2];
+    u32 originalId;
+    BehaviorScript *behavior;
     const BehaviorScript* originalBehavior;
     int initReference;
     int loopReference;
     bool replace;
+    bool luaBehavior;
     struct Mod* mod;
 };
 
@@ -641,19 +740,20 @@ enum BehaviorId smlua_get_original_behavior_id(const BehaviorScript* behavior) {
     return id;
 }
 
-const BehaviorScript* smlua_override_behavior(const BehaviorScript* behavior) {
-    lua_State* L = gLuaState;
+const BehaviorScript* smlua_override_behavior(const BehaviorScript *behavior) {
+    lua_State *L = gLuaState;
     if (L == NULL) { return behavior; }
 
     enum BehaviorId id = get_id_from_behavior(behavior);
-    const BehaviorScript* luaBehavior = get_lua_behavior_from_id(id, false);
-    if (luaBehavior != NULL) { return luaBehavior; }
+    const BehaviorScript *hookedBehavior = smlua_get_hooked_behavior_from_id(id, false);
+    if (hookedBehavior != NULL) { return hookedBehavior; }
     return behavior + *sBehaviorOffset;
 }
 
-const BehaviorScript* get_lua_behavior_from_id(enum BehaviorId id, bool returnOriginal) {
-    lua_State* L = gLuaState;
-    if (L == NULL) { return false; }
+const BehaviorScript* smlua_get_hooked_behavior_from_id(enum BehaviorId id, bool returnOriginal) {
+    lua_State *L = gLuaState;
+    if (L == NULL) { return NULL; }
+
     for (int i = 0; i < sHookedBehaviorsCount; i++) {
         struct LuaHookedBehavior* hooked = &sHookedBehaviors[i];
         if (hooked->behaviorId != id && hooked->overrideId != id) { continue; }
@@ -661,6 +761,56 @@ const BehaviorScript* get_lua_behavior_from_id(enum BehaviorId id, bool returnOr
         return hooked->behavior;
     }
     return NULL;
+}
+
+bool smlua_is_behavior_hooked(const BehaviorScript *behavior) {
+    lua_State *L = gLuaState;
+    if (L == NULL) { return false; }
+
+    enum BehaviorId id = get_id_from_behavior(behavior);
+    for (int i = 0; i < sHookedBehaviorsCount; i++) {
+        struct LuaHookedBehavior *hooked = &sHookedBehaviors[i];
+        if (hooked->behaviorId != id && hooked->overrideId != id) { continue; }
+        return hooked->luaBehavior;
+    }
+
+    return false;
+}
+
+int smlua_hook_custom_bhv(BehaviorScript *bhvScript, const char *bhvName) {
+    if (sHookedBehaviorsCount >= MAX_HOOKED_BEHAVIORS) {
+        LOG_ERROR("Hooked behaviors exceeded maximum references!");
+        return 0;
+    }
+
+    u32 originalBehaviorId = get_id_from_behavior(bhvScript);
+    u8 newBehavior = originalBehaviorId >= id_bhv_max_count;
+
+    struct LuaHookedBehavior *hooked = &sHookedBehaviors[sHookedBehaviorsCount];
+    u16 customBehaviorId = (sHookedBehaviorsCount & 0xFFFF) | LUA_BEHAVIOR_FLAG;
+    hooked->behavior = bhvScript;
+    hooked->behavior[1] = (BehaviorScript)BC_B0H(0x39, customBehaviorId); // This is ID(customBehaviorId)
+    hooked->behaviorId = customBehaviorId;
+    hooked->overrideId = newBehavior ? customBehaviorId : originalBehaviorId;
+    hooked->originalId = originalBehaviorId;
+    hooked->originalBehavior = newBehavior ? bhvScript : get_behavior_from_id(originalBehaviorId);
+    hooked->initReference = 0;
+    hooked->loopReference = 0;
+    hooked->replace = true;
+    hooked->luaBehavior = false;
+    hooked->mod = gLuaActiveMod;
+
+    sHookedBehaviorsCount++;
+
+    // We want to push the behavior into the global LUA state. So mods can access it.
+    // It's also used for some things that would normally access a LUA behavior instead.
+    lua_State* L = gLuaState;
+    if (L != NULL) {
+        lua_pushinteger(L, customBehaviorId);
+        lua_setglobal(L, bhvName);
+    }
+
+    return 1;
 }
 
 int smlua_hook_behavior(lua_State* L) {
@@ -729,14 +879,18 @@ int smlua_hook_behavior(lua_State* L) {
 
     struct LuaHookedBehavior* hooked = &sHookedBehaviors[sHookedBehaviorsCount];
     u16 customBehaviorId = (sHookedBehaviorsCount & 0xFFFF) | LUA_BEHAVIOR_FLAG;
+    hooked->behavior = calloc(3, sizeof(BehaviorScript));
+    hooked->behavior[0] = (BehaviorScript)BC_BB(0x00, objectList); // This is BEGIN(objectList)
+    hooked->behavior[1] = (BehaviorScript)BC_B0H(0x39, customBehaviorId); // This is ID(customBehaviorId)
+    hooked->behavior[2] = 0;
     hooked->behaviorId = customBehaviorId;
     hooked->overrideId = noOverrideId ? customBehaviorId : overrideBehaviorId;
-    hooked->behavior[0] = (((unsigned int) (((unsigned int)(0x00) & ((0x01 << (8)) - 1)) << (24))) | ((unsigned int) (((unsigned int)(objectList) & ((0x01 << (8)) - 1)) << (16)))); // gross. this is BEGIN(objectList)
-    hooked->behavior[1] = (((unsigned int) (((unsigned int)(0x39) & ((0x01 << (8)) - 1)) << (24))) | ((unsigned int) (((unsigned int)(customBehaviorId) & ((0x01 << (16)) - 1)) << (0)))); // gross. this is ID(customBehaviorId)
+    hooked->originalId = customBehaviorId; // For LUA behaviors. The only behavior id they have IS their custom one.
     hooked->originalBehavior = originalBehavior ? originalBehavior : hooked->behavior;
     hooked->initReference = initReference;
     hooked->loopReference = loopReference;
     hooked->replace = replaceBehavior;
+    hooked->luaBehavior = true;
     hooked->mod = gLuaActiveMod;
 
     sHookedBehaviorsCount++;
@@ -758,11 +912,17 @@ bool smlua_call_behavior_hook(const BehaviorScript** behavior, struct Object* ob
             continue;
         }
 
-        // figure out whether to run before or after
+        // Figure out whether to run before or after
         if (before && !hooked->replace) {
             return false;
         }
         if (!before && hooked->replace) {
+            return false;
+        }
+
+        // This behavior doesn't call it's LUA functions in this manner. It actually uses the normal behavior
+        // system.
+        if (!hooked->luaBehavior) {
             return false;
         }
 
@@ -991,7 +1151,7 @@ void smlua_clear_hooks(void) {
         struct LuaHookedMarioAction* hooked = &sHookedMarioActions[i];
         hooked->action = 0;
         hooked->mod = NULL;
-        hooked->reference = 0;
+        memset(hooked->actionHookRefs, 0, sizeof(hooked->actionHookRefs));
     }
     sHookedMarioActionsCount = 0;
 
@@ -1010,13 +1170,28 @@ void smlua_clear_hooks(void) {
 
     for (int i = 0; i < sHookedBehaviorsCount; i++) {
         struct LuaHookedBehavior* hooked = &sHookedBehaviors[i];
+
+        // If this is NULL. We can't do anything with it.
+        if (hooked->behavior != NULL) {
+            // If it's a LUA made behavior, The behavior is allocated so reset and free it.
+            // Otherwise it's a DynOS behavior and it needs to have it's original id put back where it belongs.
+            if (hooked->luaBehavior) {
+                // Just free the allocated behavior.
+                free(hooked->behavior);
+            } else {
+                hooked->behavior[1] = (BehaviorScript)BC_B0H(0x39, hooked->originalId); // This is ID(hooked->originalId)
+            }
+        }
+        // Reset the variables.
         hooked->behaviorId = 0;
-        hooked->behavior[0] = 0;
-        hooked->behavior[1] = 0;
+        hooked->overrideId = 0;
+        hooked->originalId = 0;
+        hooked->behavior = NULL;
         hooked->originalBehavior = NULL;
         hooked->initReference = 0;
         hooked->loopReference = 0;
         hooked->replace = false;
+        hooked->luaBehavior = false;
         hooked->mod = NULL;
     }
     sHookedBehaviorsCount = 0;

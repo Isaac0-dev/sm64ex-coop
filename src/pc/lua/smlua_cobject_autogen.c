@@ -13,6 +13,7 @@
 #include "src/pc/lua/utils/smlua_anim_utils.h"
 #include "src/pc/lua/utils/smlua_misc_utils.h"
 #include "src/pc/lua/utils/smlua_collision_utils.h"
+#include "src/pc/lua/utils/smlua_level_utils.h"
 #include "src/game/spawn_sound.h"
 #include "src/pc/network/network.h"
 #include "src/game/hardcoded.h"
@@ -173,52 +174,68 @@ static struct LuaObjectField sBehaviorDialogsFields[LUA_BEHAVIOR_DIALOGS_FIELD_C
     { "YoshiDialog",                   LVT_S32, offsetof(struct BehaviorDialogs, YoshiDialog),                   false, LOT_NONE },
 };
 
-#define LUA_BEHAVIOR_TRAJECTORIES_FIELD_COUNT 28
+#define LUA_BEHAVIOR_TRAJECTORIES_FIELD_COUNT 30
 static struct LuaObjectField sBehaviorTrajectoriesFields[LUA_BEHAVIOR_TRAJECTORIES_FIELD_COUNT] = {
-    { "BowlingBallBob2Trajectory", LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, BowlingBallBob2Trajectory), false, LOT_POINTER },
-    { "BowlingBallBobTrajectory",  LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, BowlingBallBobTrajectory),  false, LOT_POINTER },
-    { "BowlingBallTtmTrajectory",  LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, BowlingBallTtmTrajectory),  false, LOT_POINTER },
-    { "KoopaBobTrajectory",        LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, KoopaBobTrajectory),        false, LOT_POINTER },
-    { "KoopaThiTrajectory",        LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, KoopaThiTrajectory),        false, LOT_POINTER },
-    { "Mips10Trajectory",          LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, Mips10Trajectory),          false, LOT_POINTER },
-    { "Mips2Trajectory",           LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, Mips2Trajectory),           false, LOT_POINTER },
-    { "Mips3Trajectory",           LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, Mips3Trajectory),           false, LOT_POINTER },
-    { "Mips4Trajectory",           LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, Mips4Trajectory),           false, LOT_POINTER },
-    { "Mips5Trajectory",           LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, Mips5Trajectory),           false, LOT_POINTER },
-    { "Mips6Trajectory",           LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, Mips6Trajectory),           false, LOT_POINTER },
-    { "Mips7Trajectory",           LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, Mips7Trajectory),           false, LOT_POINTER },
-    { "Mips8Trajectory",           LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, Mips8Trajectory),           false, LOT_POINTER },
-    { "Mips9Trajectory",           LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, Mips9Trajectory),           false, LOT_POINTER },
-    { "MipsTrajectory",            LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, MipsTrajectory),            false, LOT_POINTER },
-    { "PlatformBitfsTrajectory",   LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, PlatformBitfsTrajectory),   false, LOT_POINTER },
-    { "PlatformCcmTrajectory",     LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, PlatformCcmTrajectory),     false, LOT_POINTER },
-    { "PlatformHmcTrajectory",     LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, PlatformHmcTrajectory),     false, LOT_POINTER },
-    { "PlatformLll2Trajectory",    LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, PlatformLll2Trajectory),    false, LOT_POINTER },
-    { "PlatformLllTrajectory",     LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, PlatformLllTrajectory),     false, LOT_POINTER },
-    { "PlatformRr2Trajectory",     LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, PlatformRr2Trajectory),     false, LOT_POINTER },
-    { "PlatformRr3Trajectory",     LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, PlatformRr3Trajectory),     false, LOT_POINTER },
-    { "PlatformRr4Trajectory",     LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, PlatformRr4Trajectory),     false, LOT_POINTER },
-    { "PlatformRrTrajectory",      LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, PlatformRrTrajectory),      false, LOT_POINTER },
-    { "RacingPenguinTrajectory",   LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, RacingPenguinTrajectory),   false, LOT_POINTER },
-    { "SnowmanHeadTrajectory",     LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, SnowmanHeadTrajectory),     false, LOT_POINTER },
-    { "Unagi2Trajectory",          LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, Unagi2Trajectory),          false, LOT_POINTER },
-    { "UnagiTrajectory",           LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, UnagiTrajectory),           false, LOT_POINTER },
+    { "BowlingBallBob2Trajectory",     LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, BowlingBallBob2Trajectory),     false, LOT_POINTER },
+    { "BowlingBallBobTrajectory",      LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, BowlingBallBobTrajectory),      false, LOT_POINTER },
+    { "BowlingBallThiLargeTrajectory", LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, BowlingBallThiLargeTrajectory), false, LOT_POINTER },
+    { "BowlingBallThiSmallTrajectory", LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, BowlingBallThiSmallTrajectory), false, LOT_POINTER },
+    { "BowlingBallTtmTrajectory",      LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, BowlingBallTtmTrajectory),      false, LOT_POINTER },
+    { "KoopaBobTrajectory",            LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, KoopaBobTrajectory),            false, LOT_POINTER },
+    { "KoopaThiTrajectory",            LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, KoopaThiTrajectory),            false, LOT_POINTER },
+    { "Mips10Trajectory",              LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, Mips10Trajectory),              false, LOT_POINTER },
+    { "Mips2Trajectory",               LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, Mips2Trajectory),               false, LOT_POINTER },
+    { "Mips3Trajectory",               LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, Mips3Trajectory),               false, LOT_POINTER },
+    { "Mips4Trajectory",               LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, Mips4Trajectory),               false, LOT_POINTER },
+    { "Mips5Trajectory",               LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, Mips5Trajectory),               false, LOT_POINTER },
+    { "Mips6Trajectory",               LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, Mips6Trajectory),               false, LOT_POINTER },
+    { "Mips7Trajectory",               LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, Mips7Trajectory),               false, LOT_POINTER },
+    { "Mips8Trajectory",               LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, Mips8Trajectory),               false, LOT_POINTER },
+    { "Mips9Trajectory",               LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, Mips9Trajectory),               false, LOT_POINTER },
+    { "MipsTrajectory",                LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, MipsTrajectory),                false, LOT_POINTER },
+    { "PlatformBitfsTrajectory",       LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, PlatformBitfsTrajectory),       false, LOT_POINTER },
+    { "PlatformCcmTrajectory",         LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, PlatformCcmTrajectory),         false, LOT_POINTER },
+    { "PlatformHmcTrajectory",         LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, PlatformHmcTrajectory),         false, LOT_POINTER },
+    { "PlatformLll2Trajectory",        LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, PlatformLll2Trajectory),        false, LOT_POINTER },
+    { "PlatformLllTrajectory",         LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, PlatformLllTrajectory),         false, LOT_POINTER },
+    { "PlatformRr2Trajectory",         LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, PlatformRr2Trajectory),         false, LOT_POINTER },
+    { "PlatformRr3Trajectory",         LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, PlatformRr3Trajectory),         false, LOT_POINTER },
+    { "PlatformRr4Trajectory",         LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, PlatformRr4Trajectory),         false, LOT_POINTER },
+    { "PlatformRrTrajectory",          LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, PlatformRrTrajectory),          false, LOT_POINTER },
+    { "RacingPenguinTrajectory",       LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, RacingPenguinTrajectory),       false, LOT_POINTER },
+    { "SnowmanHeadTrajectory",         LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, SnowmanHeadTrajectory),         false, LOT_POINTER },
+    { "Unagi2Trajectory",              LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, Unagi2Trajectory),              false, LOT_POINTER },
+    { "UnagiTrajectory",               LVT_TRAJECTORY_P, offsetof(struct BehaviorTrajectories, UnagiTrajectory),               false, LOT_POINTER },
 };
 
-#define LUA_BEHAVIOR_VALUES_FIELD_COUNT 12
+#define LUA_BEHAVIOR_VALUES_FIELD_COUNT 26
 static struct LuaObjectField sBehaviorValuesFields[LUA_BEHAVIOR_VALUES_FIELD_COUNT] = {
-    { "KoopaBobAgility",        LVT_F32,     offsetof(struct BehaviorValues, KoopaBobAgility),        false, LOT_NONE                 },
-    { "KoopaCatchupAgility",    LVT_F32,     offsetof(struct BehaviorValues, KoopaCatchupAgility),    false, LOT_NONE                 },
-    { "KoopaThiAgility",        LVT_F32,     offsetof(struct BehaviorValues, KoopaThiAgility),        false, LOT_NONE                 },
-    { "RacingPenguinBigHeight", LVT_F32,     offsetof(struct BehaviorValues, RacingPenguinBigHeight), false, LOT_NONE                 },
-    { "RacingPenguinBigRadius", LVT_F32,     offsetof(struct BehaviorValues, RacingPenguinBigRadius), false, LOT_NONE                 },
-    { "RacingPenguinHeight",    LVT_F32,     offsetof(struct BehaviorValues, RacingPenguinHeight),    false, LOT_NONE                 },
-    { "RacingPenguinRadius",    LVT_F32,     offsetof(struct BehaviorValues, RacingPenguinRadius),    false, LOT_NONE                 },
-    { "ToadStar1Requirement",   LVT_U16,     offsetof(struct BehaviorValues, ToadStar1Requirement),   false, LOT_NONE                 },
-    { "ToadStar2Requirement",   LVT_U16,     offsetof(struct BehaviorValues, ToadStar2Requirement),   false, LOT_NONE                 },
-    { "ToadStar3Requirement",   LVT_U16,     offsetof(struct BehaviorValues, ToadStar3Requirement),   false, LOT_NONE                 },
-    { "dialogs",                LVT_COBJECT, offsetof(struct BehaviorValues, dialogs),                true,  LOT_BEHAVIORDIALOGS      },
-    { "trajectories",           LVT_COBJECT, offsetof(struct BehaviorValues, trajectories),           true,  LOT_BEHAVIORTRAJECTORIES },
+    { "BowlingBallBob2Speed",     LVT_F32,     offsetof(struct BehaviorValues, BowlingBallBob2Speed),     false, LOT_NONE                 },
+    { "BowlingBallBobSpeed",      LVT_F32,     offsetof(struct BehaviorValues, BowlingBallBobSpeed),      false, LOT_NONE                 },
+    { "BowlingBallThiLargeSpeed", LVT_F32,     offsetof(struct BehaviorValues, BowlingBallThiLargeSpeed), false, LOT_NONE                 },
+    { "BowlingBallThiSmallSpeed", LVT_F32,     offsetof(struct BehaviorValues, BowlingBallThiSmallSpeed), false, LOT_NONE                 },
+    { "BowlingBallTtmSpeed",      LVT_F32,     offsetof(struct BehaviorValues, BowlingBallTtmSpeed),      false, LOT_NONE                 },
+    { "GrateStarRequirement",     LVT_U16,     offsetof(struct BehaviorValues, GrateStarRequirement),     false, LOT_NONE                 },
+    { "KingBobombFVel",           LVT_F32,     offsetof(struct BehaviorValues, KingBobombFVel),           false, LOT_NONE                 },
+    { "KingBobombHealth",         LVT_S16,     offsetof(struct BehaviorValues, KingBobombHealth),         false, LOT_NONE                 },
+    { "KingBobombYawVel",         LVT_S16,     offsetof(struct BehaviorValues, KingBobombYawVel),         false, LOT_NONE                 },
+    { "KingWhompHealth",          LVT_S16,     offsetof(struct BehaviorValues, KingWhompHealth),          false, LOT_NONE                 },
+    { "KoopaBobAgility",          LVT_F32,     offsetof(struct BehaviorValues, KoopaBobAgility),          false, LOT_NONE                 },
+    { "KoopaCatchupAgility",      LVT_F32,     offsetof(struct BehaviorValues, KoopaCatchupAgility),      false, LOT_NONE                 },
+    { "KoopaThiAgility",          LVT_F32,     offsetof(struct BehaviorValues, KoopaThiAgility),          false, LOT_NONE                 },
+    { "MipsStar1Requirement",     LVT_S16,     offsetof(struct BehaviorValues, MipsStar1Requirement),     false, LOT_NONE                 },
+    { "MipsStar2Requirement",     LVT_S16,     offsetof(struct BehaviorValues, MipsStar2Requirement),     false, LOT_NONE                 },
+    { "RacingPenguinBigHeight",   LVT_F32,     offsetof(struct BehaviorValues, RacingPenguinBigHeight),   false, LOT_NONE                 },
+    { "RacingPenguinBigRadius",   LVT_F32,     offsetof(struct BehaviorValues, RacingPenguinBigRadius),   false, LOT_NONE                 },
+    { "RacingPenguinHeight",      LVT_F32,     offsetof(struct BehaviorValues, RacingPenguinHeight),      false, LOT_NONE                 },
+    { "RacingPenguinRadius",      LVT_F32,     offsetof(struct BehaviorValues, RacingPenguinRadius),      false, LOT_NONE                 },
+    { "ShowStarMilestones",       LVT_U8,      offsetof(struct BehaviorValues, ShowStarMilestones),       false, LOT_NONE                 },
+    { "ToadStar1Requirement",     LVT_U16,     offsetof(struct BehaviorValues, ToadStar1Requirement),     false, LOT_NONE                 },
+    { "ToadStar2Requirement",     LVT_U16,     offsetof(struct BehaviorValues, ToadStar2Requirement),     false, LOT_NONE                 },
+    { "ToadStar3Requirement",     LVT_U16,     offsetof(struct BehaviorValues, ToadStar3Requirement),     false, LOT_NONE                 },
+    { "dialogs",                  LVT_COBJECT, offsetof(struct BehaviorValues, dialogs),                  true,  LOT_BEHAVIORDIALOGS      },
+    { "starsNeededForDialog",     LVT_COBJECT, offsetof(struct BehaviorValues, starsNeededForDialog),     true,  LOT_STARSNEEDEDFORDIALOG },
+    { "trajectories",             LVT_COBJECT, offsetof(struct BehaviorValues, trajectories),             true,  LOT_BEHAVIORTRAJECTORIES },
 };
 
 #define LUA_BULLY_COLLISION_DATA_FIELD_COUNT 6
@@ -376,6 +393,21 @@ static struct LuaObjectField sControllerFields[LUA_CONTROLLER_FIELD_COUNT] = {
     { "stickY",         LVT_F32, offsetof(struct Controller, stickY),         false, LOT_NONE },
 };
 
+#define LUA_CUSTOM_LEVEL_INFO_FIELD_COUNT 11
+static struct LuaObjectField sCustomLevelInfoFields[LUA_CUSTOM_LEVEL_INFO_FIELD_COUNT] = {
+    { "acousticReach",   LVT_U32,           offsetof(struct CustomLevelInfo, acousticReach),   false, LOT_NONE            },
+    { "courseNum",       LVT_S16,           offsetof(struct CustomLevelInfo, courseNum),       false, LOT_NONE            },
+    { "echoLevel1",      LVT_U32,           offsetof(struct CustomLevelInfo, echoLevel1),      false, LOT_NONE            },
+    { "echoLevel2",      LVT_U32,           offsetof(struct CustomLevelInfo, echoLevel2),      false, LOT_NONE            },
+    { "echoLevel3",      LVT_U32,           offsetof(struct CustomLevelInfo, echoLevel3),      false, LOT_NONE            },
+    { "fullName",        LVT_STRING_P,      offsetof(struct CustomLevelInfo, fullName),        true,  LOT_NONE            },
+    { "levelNum",        LVT_S16,           offsetof(struct CustomLevelInfo, levelNum),        false, LOT_NONE            },
+    { "next",            LVT_COBJECT_P,     offsetof(struct CustomLevelInfo, next),            false, LOT_CUSTOMLEVELINFO },
+    { "script",          LVT_LEVELSCRIPT_P, offsetof(struct CustomLevelInfo, script),          true,  LOT_POINTER         },
+    { "scriptEntryName", LVT_STRING_P,      offsetof(struct CustomLevelInfo, scriptEntryName), true,  LOT_NONE            },
+    { "shortName",       LVT_STRING_P,      offsetof(struct CustomLevelInfo, shortName),       true,  LOT_NONE            },
+};
+
 #define LUA_CUTSCENE_FIELD_COUNT 1
 static struct LuaObjectField sCutsceneFields[LUA_CUTSCENE_FIELD_COUNT] = {
     { "duration", LVT_S16, offsetof(struct Cutscene, duration), false, LOT_NONE },
@@ -407,10 +439,11 @@ static struct LuaObjectField sFloorGeometryFields[LUA_FLOOR_GEOMETRY_FIELD_COUNT
 //  { "unused",       LOT_???, offsetof(struct FloorGeometry, unused),       false, LOT_???  }, <--- UNIMPLEMENTED
 };
 
-#define LUA_GLOBAL_OBJECT_ANIMATIONS_FIELD_COUNT 53
+#define LUA_GLOBAL_OBJECT_ANIMATIONS_FIELD_COUNT 56
 static struct LuaObjectField sGlobalObjectAnimationsFields[LUA_GLOBAL_OBJECT_ANIMATIONS_FIELD_COUNT] = {
     { "amp_seg8_anims_08004034",           LVT_OBJECTANIMPOINTER_P, offsetof(struct GlobalObjectAnimations, amp_seg8_anims_08004034),           true, LOT_POINTER },
     { "birds_seg5_anims_050009E8",         LVT_OBJECTANIMPOINTER_P, offsetof(struct GlobalObjectAnimations, birds_seg5_anims_050009E8),         true, LOT_POINTER },
+    { "blargg_seg5_anims_0500616C",        LVT_OBJECTANIMPOINTER_P, offsetof(struct GlobalObjectAnimations, blargg_seg5_anims_0500616C),        true, LOT_POINTER },
     { "blue_fish_seg3_anims_0301C2B0",     LVT_OBJECTANIMPOINTER_P, offsetof(struct GlobalObjectAnimations, blue_fish_seg3_anims_0301C2B0),     true, LOT_POINTER },
     { "bobomb_seg8_anims_0802396C",        LVT_OBJECTANIMPOINTER_P, offsetof(struct GlobalObjectAnimations, bobomb_seg8_anims_0802396C),        true, LOT_POINTER },
     { "bookend_seg5_anims_05002540",       LVT_OBJECTANIMPOINTER_P, offsetof(struct GlobalObjectAnimations, bookend_seg5_anims_05002540),       true, LOT_POINTER },
@@ -425,6 +458,7 @@ static struct LuaObjectField sGlobalObjectAnimationsFields[LUA_GLOBAL_OBJECT_ANI
     { "chilly_chief_seg6_anims_06003994",  LVT_OBJECTANIMPOINTER_P, offsetof(struct GlobalObjectAnimations, chilly_chief_seg6_anims_06003994),  true, LOT_POINTER },
     { "chuckya_seg8_anims_0800C070",       LVT_OBJECTANIMPOINTER_P, offsetof(struct GlobalObjectAnimations, chuckya_seg8_anims_0800C070),       true, LOT_POINTER },
     { "clam_shell_seg5_anims_05001744",    LVT_OBJECTANIMPOINTER_P, offsetof(struct GlobalObjectAnimations, clam_shell_seg5_anims_05001744),    true, LOT_POINTER },
+    { "cyan_fish_seg6_anims_0600E264",     LVT_OBJECTANIMPOINTER_P, offsetof(struct GlobalObjectAnimations, cyan_fish_seg6_anims_0600E264),     true, LOT_POINTER },
     { "door_seg3_anims_030156C0",          LVT_OBJECTANIMPOINTER_P, offsetof(struct GlobalObjectAnimations, door_seg3_anims_030156C0),          true, LOT_POINTER },
     { "dorrie_seg6_anims_0600F638",        LVT_OBJECTANIMPOINTER_P, offsetof(struct GlobalObjectAnimations, dorrie_seg6_anims_0600F638),        true, LOT_POINTER },
     { "eyerok_seg5_anims_050116E4",        LVT_OBJECTANIMPOINTER_P, offsetof(struct GlobalObjectAnimations, eyerok_seg5_anims_050116E4),        true, LOT_POINTER },
@@ -451,6 +485,7 @@ static struct LuaObjectField sGlobalObjectAnimationsFields[LUA_GLOBAL_OBJECT_ANI
     { "skeeter_seg6_anims_06007DE0",       LVT_OBJECTANIMPOINTER_P, offsetof(struct GlobalObjectAnimations, skeeter_seg6_anims_06007DE0),       true, LOT_POINTER },
     { "snowman_seg5_anims_0500D118",       LVT_OBJECTANIMPOINTER_P, offsetof(struct GlobalObjectAnimations, snowman_seg5_anims_0500D118),       true, LOT_POINTER },
     { "spindrift_seg5_anims_05002D68",     LVT_OBJECTANIMPOINTER_P, offsetof(struct GlobalObjectAnimations, spindrift_seg5_anims_05002D68),     true, LOT_POINTER },
+    { "spiny_egg_seg5_anims_050157E4",     LVT_OBJECTANIMPOINTER_P, offsetof(struct GlobalObjectAnimations, spiny_egg_seg5_anims_050157E4),     true, LOT_POINTER },
     { "spiny_seg5_anims_05016EAC",         LVT_OBJECTANIMPOINTER_P, offsetof(struct GlobalObjectAnimations, spiny_seg5_anims_05016EAC),         true, LOT_POINTER },
     { "sushi_seg5_anims_0500AE54",         LVT_OBJECTANIMPOINTER_P, offsetof(struct GlobalObjectAnimations, sushi_seg5_anims_0500AE54),         true, LOT_POINTER },
     { "swoop_seg6_anims_060070D0",         LVT_OBJECTANIMPOINTER_P, offsetof(struct GlobalObjectAnimations, swoop_seg6_anims_060070D0),         true, LOT_POINTER },
@@ -464,7 +499,7 @@ static struct LuaObjectField sGlobalObjectAnimationsFields[LUA_GLOBAL_OBJECT_ANI
     { "yoshi_seg5_anims_05024100",         LVT_OBJECTANIMPOINTER_P, offsetof(struct GlobalObjectAnimations, yoshi_seg5_anims_05024100),         true, LOT_POINTER },
 };
 
-#define LUA_GLOBAL_OBJECT_COLLISION_DATA_FIELD_COUNT 99
+#define LUA_GLOBAL_OBJECT_COLLISION_DATA_FIELD_COUNT 101
 static struct LuaObjectField sGlobalObjectCollisionDataFields[LUA_GLOBAL_OBJECT_COLLISION_DATA_FIELD_COUNT] = {
     { "bbh_seg7_collision_coffin",                       LVT_COLLISION_P, offsetof(struct GlobalObjectCollisionData, bbh_seg7_collision_coffin),                       false, LOT_POINTER },
     { "bbh_seg7_collision_haunted_bookshelf",            LVT_COLLISION_P, offsetof(struct GlobalObjectCollisionData, bbh_seg7_collision_haunted_bookshelf),            false, LOT_POINTER },
@@ -491,6 +526,7 @@ static struct LuaObjectField sGlobalObjectCollisionDataFields[LUA_GLOBAL_OBJECT_
     { "ddd_seg7_collision_submarine",                    LVT_COLLISION_P, offsetof(struct GlobalObjectCollisionData, ddd_seg7_collision_submarine),                    false, LOT_POINTER },
     { "door_seg3_collision_0301CE78",                    LVT_COLLISION_P, offsetof(struct GlobalObjectCollisionData, door_seg3_collision_0301CE78),                    false, LOT_POINTER },
     { "dorrie_seg6_collision_0600F644",                  LVT_COLLISION_P, offsetof(struct GlobalObjectCollisionData, dorrie_seg6_collision_0600F644),                  false, LOT_POINTER },
+    { "dorrie_seg6_collision_0600FBB8",                  LVT_COLLISION_P, offsetof(struct GlobalObjectCollisionData, dorrie_seg6_collision_0600FBB8),                  false, LOT_POINTER },
     { "exclamation_box_outline_seg8_collision_08025F78", LVT_COLLISION_P, offsetof(struct GlobalObjectCollisionData, exclamation_box_outline_seg8_collision_08025F78), false, LOT_POINTER },
     { "hmc_seg7_collision_controllable_platform",        LVT_COLLISION_P, offsetof(struct GlobalObjectCollisionData, hmc_seg7_collision_controllable_platform),        false, LOT_POINTER },
     { "hmc_seg7_collision_controllable_platform_sub",    LVT_COLLISION_P, offsetof(struct GlobalObjectCollisionData, hmc_seg7_collision_controllable_platform_sub),    false, LOT_POINTER },
@@ -547,6 +583,7 @@ static struct LuaObjectField sGlobalObjectCollisionDataFields[LUA_GLOBAL_OBJECT_
     { "ttm_seg7_collision_pitoune_2",                    LVT_COLLISION_P, offsetof(struct GlobalObjectCollisionData, ttm_seg7_collision_pitoune_2),                    false, LOT_POINTER },
     { "ttm_seg7_collision_podium_warp",                  LVT_COLLISION_P, offsetof(struct GlobalObjectCollisionData, ttm_seg7_collision_podium_warp),                  false, LOT_POINTER },
     { "ttm_seg7_collision_ukiki_cage",                   LVT_COLLISION_P, offsetof(struct GlobalObjectCollisionData, ttm_seg7_collision_ukiki_cage),                   false, LOT_POINTER },
+    { "unknown_seg8_collision_080262F8",                 LVT_COLLISION_P, offsetof(struct GlobalObjectCollisionData, unknown_seg8_collision_080262F8),                 false, LOT_POINTER },
     { "warp_pipe_seg3_collision_03009AC8",               LVT_COLLISION_P, offsetof(struct GlobalObjectCollisionData, warp_pipe_seg3_collision_03009AC8),               false, LOT_POINTER },
     { "wdw_seg7_collision_arrow_lift",                   LVT_COLLISION_P, offsetof(struct GlobalObjectCollisionData, wdw_seg7_collision_arrow_lift),                   false, LOT_POINTER },
     { "wdw_seg7_collision_express_elevator_platform",    LVT_COLLISION_P, offsetof(struct GlobalObjectCollisionData, wdw_seg7_collision_express_elevator_platform),    false, LOT_POINTER },
@@ -567,15 +604,20 @@ static struct LuaObjectField sGlobalObjectCollisionDataFields[LUA_GLOBAL_OBJECT_
     { "wooden_signpost_seg3_collision_0302DD80",         LVT_COLLISION_P, offsetof(struct GlobalObjectCollisionData, wooden_signpost_seg3_collision_0302DD80),         false, LOT_POINTER },
 };
 
-#define LUA_GLOBAL_TEXTURES_FIELD_COUNT 7
+#define LUA_GLOBAL_TEXTURES_FIELD_COUNT 12
 static struct LuaObjectField sGlobalTexturesFields[LUA_GLOBAL_TEXTURES_FIELD_COUNT] = {
-    { "arrow_down", LVT_COBJECT, offsetof(struct GlobalTextures, arrow_down), true, LOT_TEXTUREINFO },
-    { "arrow_up",   LVT_COBJECT, offsetof(struct GlobalTextures, arrow_up),   true, LOT_TEXTUREINFO },
-    { "camera",     LVT_COBJECT, offsetof(struct GlobalTextures, camera),     true, LOT_TEXTUREINFO },
-    { "coin",       LVT_COBJECT, offsetof(struct GlobalTextures, coin),       true, LOT_TEXTUREINFO },
-    { "lakitu",     LVT_COBJECT, offsetof(struct GlobalTextures, lakitu),     true, LOT_TEXTUREINFO },
-    { "no_camera",  LVT_COBJECT, offsetof(struct GlobalTextures, no_camera),  true, LOT_TEXTUREINFO },
-    { "star",       LVT_COBJECT, offsetof(struct GlobalTextures, star),       true, LOT_TEXTUREINFO },
+    { "arrow_down",   LVT_COBJECT, offsetof(struct GlobalTextures, arrow_down),   true, LOT_TEXTUREINFO },
+    { "arrow_up",     LVT_COBJECT, offsetof(struct GlobalTextures, arrow_up),     true, LOT_TEXTUREINFO },
+    { "camera",       LVT_COBJECT, offsetof(struct GlobalTextures, camera),       true, LOT_TEXTUREINFO },
+    { "coin",         LVT_COBJECT, offsetof(struct GlobalTextures, coin),         true, LOT_TEXTUREINFO },
+    { "lakitu",       LVT_COBJECT, offsetof(struct GlobalTextures, lakitu),       true, LOT_TEXTUREINFO },
+    { "luigi_head",   LVT_COBJECT, offsetof(struct GlobalTextures, luigi_head),   true, LOT_TEXTUREINFO },
+    { "mario_head",   LVT_COBJECT, offsetof(struct GlobalTextures, mario_head),   true, LOT_TEXTUREINFO },
+    { "no_camera",    LVT_COBJECT, offsetof(struct GlobalTextures, no_camera),    true, LOT_TEXTUREINFO },
+    { "star",         LVT_COBJECT, offsetof(struct GlobalTextures, star),         true, LOT_TEXTUREINFO },
+    { "toad_head",    LVT_COBJECT, offsetof(struct GlobalTextures, toad_head),    true, LOT_TEXTUREINFO },
+    { "waluigi_head", LVT_COBJECT, offsetof(struct GlobalTextures, waluigi_head), true, LOT_TEXTUREINFO },
+    { "wario_head",   LVT_COBJECT, offsetof(struct GlobalTextures, wario_head),   true, LOT_TEXTUREINFO },
 };
 
 #define LUA_GRAPH_NODE_FIELD_COUNT 7
@@ -590,7 +632,7 @@ static struct LuaObjectField sGraphNodeFields[LUA_GRAPH_NODE_FIELD_COUNT] = {
     { "type",       LVT_S16,       offsetof(struct GraphNode, type),       false, LOT_NONE      },
 };
 
-#define LUA_GRAPH_NODE_OBJECT_FIELD_COUNT 19
+#define LUA_GRAPH_NODE_OBJECT_FIELD_COUNT 20
 static struct LuaObjectField sGraphNodeObjectFields[LUA_GRAPH_NODE_OBJECT_FIELD_COUNT] = {
     { "activeAreaIndex",            LVT_S8,        offsetof(struct GraphNodeObject, activeAreaIndex),            false, LOT_NONE      },
     { "angle",                      LVT_COBJECT,   offsetof(struct GraphNodeObject, angle),                      true,  LOT_VEC3S     },
@@ -610,6 +652,7 @@ static struct LuaObjectField sGraphNodeObjectFields[LUA_GRAPH_NODE_OBJECT_FIELD_
     { "prevTimestamp",              LVT_U32,       offsetof(struct GraphNodeObject, prevTimestamp),              false, LOT_NONE      },
     { "scale",                      LVT_COBJECT,   offsetof(struct GraphNodeObject, scale),                      true,  LOT_VEC3F     },
     { "sharedChild",                LVT_COBJECT_P, offsetof(struct GraphNodeObject, sharedChild),                false, LOT_GRAPHNODE },
+    { "skipInViewCheck",            LVT_BOOL,      offsetof(struct GraphNodeObject, skipInViewCheck),            false, LOT_NONE      },
     { "skipInterpolationTimestamp", LVT_U32,       offsetof(struct GraphNodeObject, skipInterpolationTimestamp), false, LOT_NONE      },
 //  { "throwMatrix",                LVT_???,       offsetof(struct GraphNodeObject, throwMatrix),                false, LOT_???       }, <--- UNIMPLEMENTED
 //  { "throwMatrixPrev",            LVT_???,       offsetof(struct GraphNodeObject, throwMatrixPrev),            false, LOT_???       }, <--- UNIMPLEMENTED
@@ -683,13 +726,18 @@ static struct LuaObjectField sLakituStateFields[LUA_LAKITU_STATE_FIELD_COUNT] = 
     { "yaw",                              LVT_S16,     offsetof(struct LakituState, yaw),                              false, LOT_NONE  },
 };
 
-#define LUA_LEVEL_VALUES_FIELD_COUNT 15
+#define LUA_LEVEL_VALUES_FIELD_COUNT 20
 static struct LuaObjectField sLevelValuesFields[LUA_LEVEL_VALUES_FIELD_COUNT] = {
+    { "ceilHeightLimit",          LVT_S16,     offsetof(struct LevelValues, ceilHeightLimit),          false, LOT_NONE          },
     { "coinsRequiredForCoinStar", LVT_S16,     offsetof(struct LevelValues, coinsRequiredForCoinStar), false, LOT_NONE          },
     { "entryLevel",               LVT_S32,     offsetof(struct LevelValues, entryLevel),               false, LOT_NONE          },
     { "exitCastleArea",           LVT_S16,     offsetof(struct LevelValues, exitCastleArea),           false, LOT_NONE          },
     { "exitCastleLevel",          LVT_S32,     offsetof(struct LevelValues, exitCastleLevel),          false, LOT_NONE          },
     { "exitCastleWarpNode",       LVT_U8,      offsetof(struct LevelValues, exitCastleWarpNode),       false, LOT_NONE          },
+    { "fixCollisionBugs",         LVT_U8,      offsetof(struct LevelValues, fixCollisionBugs),         false, LOT_NONE          },
+    { "floorLowerLimit",          LVT_S16,     offsetof(struct LevelValues, floorLowerLimit),          false, LOT_NONE          },
+    { "floorLowerLimitMisc",      LVT_S16,     offsetof(struct LevelValues, floorLowerLimitMisc),      false, LOT_NONE          },
+    { "floorLowerLimitShadow",    LVT_S16,     offsetof(struct LevelValues, floorLowerLimitShadow),    false, LOT_NONE          },
     { "metalCapDuration",         LVT_U16,     offsetof(struct LevelValues, metalCapDuration),         false, LOT_NONE          },
     { "metalCapDurationCotmc",    LVT_U16,     offsetof(struct LevelValues, metalCapDurationCotmc),    false, LOT_NONE          },
     { "pssSlideStarIndex",        LVT_U8,      offsetof(struct LevelValues, pssSlideStarIndex),        false, LOT_NONE          },
@@ -738,7 +786,7 @@ static struct LuaObjectField sMarioBodyStateFields[LUA_MARIO_BODY_STATE_FIELD_CO
     { "wingFlutter",         LVT_S8,      offsetof(struct MarioBodyState, wingFlutter),         false, LOT_NONE  },
 };
 
-#define LUA_MARIO_STATE_FIELD_COUNT 74
+#define LUA_MARIO_STATE_FIELD_COUNT 75
 static struct LuaObjectField sMarioStateFields[LUA_MARIO_STATE_FIELD_COUNT] = {
     { "action",                   LVT_U32,       offsetof(struct MarioState, action),                   false, LOT_NONE              },
     { "actionArg",                LVT_U32,       offsetof(struct MarioState, actionArg),                false, LOT_NONE              },
@@ -813,6 +861,7 @@ static struct LuaObjectField sMarioStateFields[LUA_MARIO_STATE_FIELD_COUNT] = {
     { "vel",                      LVT_COBJECT,   offsetof(struct MarioState, vel),                      true,  LOT_VEC3F             },
     { "wall",                     LVT_COBJECT_P, offsetof(struct MarioState, wall),                     false, LOT_SURFACE           },
     { "wallKickTimer",            LVT_U8,        offsetof(struct MarioState, wallKickTimer),            false, LOT_NONE              },
+    { "wallNormal",               LVT_COBJECT,   offsetof(struct MarioState, wallNormal),               true,  LOT_VEC3F             },
     { "wasNetworkVisible",        LVT_U8,        offsetof(struct MarioState, wasNetworkVisible),        false, LOT_NONE              },
     { "waterLevel",               LVT_S16,       offsetof(struct MarioState, waterLevel),               false, LOT_NONE              },
 };
@@ -832,15 +881,14 @@ static struct LuaObjectField sModFields[LUA_MOD_FIELD_COUNT] = {
 //  { "size",         LVT_???,      offsetof(struct Mod, size),         true, LOT_???  }, <--- UNIMPLEMENTED
 };
 
-#define LUA_MOD_FILE_FIELD_COUNT 4
+#define LUA_MOD_FILE_FIELD_COUNT 3
 static struct LuaObjectField sModFileFields[LUA_MOD_FILE_FIELD_COUNT] = {
     { "cachedPath",   LVT_STRING_P, offsetof(struct ModFile, cachedPath),   true, LOT_NONE },
-    { "complete",     LVT_BOOL,     offsetof(struct ModFile, complete),     true, LOT_NONE },
-    { "curOffset",    LVT_U64,      offsetof(struct ModFile, curOffset),    true, LOT_NONE },
 //  { "dataHash",     LOT_???,      offsetof(struct ModFile, dataHash),     true, LOT_???  }, <--- UNIMPLEMENTED
 //  { "fp",           LVT_???,      offsetof(struct ModFile, fp),           true, LOT_???  }, <--- UNIMPLEMENTED
     { "relativePath", LVT_STRING,   offsetof(struct ModFile, relativePath), true, LOT_NONE },
 //  { "size",         LVT_???,      offsetof(struct ModFile, size),         true, LOT_???  }, <--- UNIMPLEMENTED
+    { "wroteBytes",   LVT_U64,      offsetof(struct ModFile, wroteBytes),   true, LOT_NONE },
 };
 
 #define LUA_MODE_TRANSITION_INFO_FIELD_COUNT 6
@@ -853,38 +901,42 @@ static struct LuaObjectField sModeTransitionInfoFields[LUA_MODE_TRANSITION_INFO_
     { "transitionStart", LVT_COBJECT, offsetof(struct ModeTransitionInfo, transitionStart), true,  LOT_LINEARTRANSITIONPOINT },
 };
 
-#define LUA_NETWORK_PLAYER_FIELD_COUNT 25
+#define LUA_NETWORK_PLAYER_FIELD_COUNT 29
 static struct LuaObjectField sNetworkPlayerFields[LUA_NETWORK_PLAYER_FIELD_COUNT] = {
-    { "connected",            LVT_BOOL,   offsetof(struct NetworkPlayer, connected),            true,  LOT_NONE },
-    { "currActNum",           LVT_S16,    offsetof(struct NetworkPlayer, currActNum),           true,  LOT_NONE },
-    { "currAreaIndex",        LVT_S16,    offsetof(struct NetworkPlayer, currAreaIndex),        true,  LOT_NONE },
-    { "currAreaSyncValid",    LVT_BOOL,   offsetof(struct NetworkPlayer, currAreaSyncValid),    true,  LOT_NONE },
-    { "currCourseNum",        LVT_S16,    offsetof(struct NetworkPlayer, currCourseNum),        true,  LOT_NONE },
-    { "currLevelAreaSeqId",   LVT_U16,    offsetof(struct NetworkPlayer, currLevelAreaSeqId),   true,  LOT_NONE },
-    { "currLevelNum",         LVT_S16,    offsetof(struct NetworkPlayer, currLevelNum),         true,  LOT_NONE },
-    { "currLevelSyncValid",   LVT_BOOL,   offsetof(struct NetworkPlayer, currLevelSyncValid),   true,  LOT_NONE },
-    { "description",          LVT_STRING, offsetof(struct NetworkPlayer, description),          true,  LOT_NONE },
-    { "descriptionA",         LVT_U8,     offsetof(struct NetworkPlayer, descriptionA),         true,  LOT_NONE },
-    { "descriptionB",         LVT_U8,     offsetof(struct NetworkPlayer, descriptionB),         true,  LOT_NONE },
-    { "descriptionG",         LVT_U8,     offsetof(struct NetworkPlayer, descriptionG),         true,  LOT_NONE },
-    { "descriptionR",         LVT_U8,     offsetof(struct NetworkPlayer, descriptionR),         true,  LOT_NONE },
-    { "fadeOpacity",          LVT_U8,     offsetof(struct NetworkPlayer, fadeOpacity),          true,  LOT_NONE },
-    { "globalIndex",          LVT_U8,     offsetof(struct NetworkPlayer, globalIndex),          true,  LOT_NONE },
-    { "lastReceived",         LVT_F32,    offsetof(struct NetworkPlayer, lastReceived),         true,  LOT_NONE },
-    { "lastSent",             LVT_F32,    offsetof(struct NetworkPlayer, lastSent),             true,  LOT_NONE },
-    { "localIndex",           LVT_U8,     offsetof(struct NetworkPlayer, localIndex),           true,  LOT_NONE },
-    { "modelIndex",           LVT_U8,     offsetof(struct NetworkPlayer, modelIndex),           true,  LOT_NONE },
-    { "name",                 LVT_STRING, offsetof(struct NetworkPlayer, name),                 true,  LOT_NONE },
-    { "onRxSeqId",            LVT_U8,     offsetof(struct NetworkPlayer, onRxSeqId),            true,  LOT_NONE },
-    { "overrideModelIndex",   LVT_U8,     offsetof(struct NetworkPlayer, overrideModelIndex),   false, LOT_NONE },
-    { "overridePaletteIndex", LVT_U8,     offsetof(struct NetworkPlayer, overridePaletteIndex), false, LOT_NONE },
-    { "paletteIndex",         LVT_U8,     offsetof(struct NetworkPlayer, paletteIndex),         true,  LOT_NONE },
-//  { "rxPacketHash",         LOT_???,    offsetof(struct NetworkPlayer, rxPacketHash),         true,  LOT_???  }, <--- UNIMPLEMENTED
-//  { "rxSeqIds",             LOT_???,    offsetof(struct NetworkPlayer, rxSeqIds),             true,  LOT_???  }, <--- UNIMPLEMENTED
-    { "type",                 LVT_U8,     offsetof(struct NetworkPlayer, type),                 true,  LOT_NONE },
+    { "connected",              LVT_BOOL,    offsetof(struct NetworkPlayer, connected),              true,  LOT_NONE          },
+    { "currActNum",             LVT_S16,     offsetof(struct NetworkPlayer, currActNum),             true,  LOT_NONE          },
+    { "currAreaIndex",          LVT_S16,     offsetof(struct NetworkPlayer, currAreaIndex),          true,  LOT_NONE          },
+    { "currAreaSyncValid",      LVT_BOOL,    offsetof(struct NetworkPlayer, currAreaSyncValid),      true,  LOT_NONE          },
+    { "currCourseNum",          LVT_S16,     offsetof(struct NetworkPlayer, currCourseNum),          true,  LOT_NONE          },
+    { "currLevelAreaSeqId",     LVT_U16,     offsetof(struct NetworkPlayer, currLevelAreaSeqId),     true,  LOT_NONE          },
+    { "currLevelNum",           LVT_S16,     offsetof(struct NetworkPlayer, currLevelNum),           true,  LOT_NONE          },
+    { "currLevelSyncValid",     LVT_BOOL,    offsetof(struct NetworkPlayer, currLevelSyncValid),     true,  LOT_NONE          },
+    { "currPositionValid",      LVT_BOOL,    offsetof(struct NetworkPlayer, currPositionValid),      true,  LOT_NONE          },
+    { "description",            LVT_STRING,  offsetof(struct NetworkPlayer, description),            true,  LOT_NONE          },
+    { "descriptionA",           LVT_U8,      offsetof(struct NetworkPlayer, descriptionA),           true,  LOT_NONE          },
+    { "descriptionB",           LVT_U8,      offsetof(struct NetworkPlayer, descriptionB),           true,  LOT_NONE          },
+    { "descriptionG",           LVT_U8,      offsetof(struct NetworkPlayer, descriptionG),           true,  LOT_NONE          },
+    { "descriptionR",           LVT_U8,      offsetof(struct NetworkPlayer, descriptionR),           true,  LOT_NONE          },
+    { "fadeOpacity",            LVT_U8,      offsetof(struct NetworkPlayer, fadeOpacity),            true,  LOT_NONE          },
+    { "globalIndex",            LVT_U8,      offsetof(struct NetworkPlayer, globalIndex),            true,  LOT_NONE          },
+    { "lastReceived",           LVT_F32,     offsetof(struct NetworkPlayer, lastReceived),           true,  LOT_NONE          },
+    { "lastSent",               LVT_F32,     offsetof(struct NetworkPlayer, lastSent),               true,  LOT_NONE          },
+    { "localIndex",             LVT_U8,      offsetof(struct NetworkPlayer, localIndex),             true,  LOT_NONE          },
+    { "modelIndex",             LVT_U8,      offsetof(struct NetworkPlayer, modelIndex),             true,  LOT_NONE          },
+    { "name",                   LVT_STRING,  offsetof(struct NetworkPlayer, name),                   true,  LOT_NONE          },
+    { "onRxSeqId",              LVT_U8,      offsetof(struct NetworkPlayer, onRxSeqId),              true,  LOT_NONE          },
+    { "overrideModelIndex",     LVT_U8,      offsetof(struct NetworkPlayer, overrideModelIndex),     false, LOT_NONE          },
+    { "overridePalette",        LVT_COBJECT, offsetof(struct NetworkPlayer, overridePalette),        false, LOT_PLAYERPALETTE },
+    { "overridePaletteIndex",   LVT_U8,      offsetof(struct NetworkPlayer, overridePaletteIndex),   false, LOT_NONE          },
+    { "overridePaletteIndexLp", LVT_U8,      offsetof(struct NetworkPlayer, overridePaletteIndexLp), true,  LOT_NONE          },
+    { "palette",                LVT_COBJECT, offsetof(struct NetworkPlayer, palette),                true,  LOT_PLAYERPALETTE },
+    { "paletteIndex",           LVT_U8,      offsetof(struct NetworkPlayer, paletteIndex),           true,  LOT_NONE          },
+//  { "rxPacketHash",           LOT_???,     offsetof(struct NetworkPlayer, rxPacketHash),           true,  LOT_???           }, <--- UNIMPLEMENTED
+//  { "rxSeqIds",               LOT_???,     offsetof(struct NetworkPlayer, rxSeqIds),               true,  LOT_???           }, <--- UNIMPLEMENTED
+    { "type",                   LVT_U8,      offsetof(struct NetworkPlayer, type),                   true,  LOT_NONE          },
 };
 
-#define LUA_OBJECT_FIELD_COUNT 754
+#define LUA_OBJECT_FIELD_COUNT 755
 static struct LuaObjectField sObjectFields[LUA_OBJECT_FIELD_COUNT] = {
     { "activeFlags",                                LVT_S16,                 offsetof(struct Object, activeFlags),                                false, LOT_NONE         },
     { "areaTimer",                                  LVT_U32,                 offsetof(struct Object, areaTimer),                                  false, LOT_NONE         },
@@ -1649,6 +1701,7 @@ static struct LuaObjectField sObjectFields[LUA_OBJECT_FIELD_COUNT] = {
 //  { "rawData",                                    LOT_???,                 offsetof(struct Object, rawData),                                    false, LOT_???          }, <--- UNIMPLEMENTED
 //  { "respawnInfo",                                LVT_???,                 offsetof(struct Object, respawnInfo),                                false, LOT_???          }, <--- UNIMPLEMENTED
     { "respawnInfoType",                            LVT_S16,                 offsetof(struct Object, respawnInfoType),                            false, LOT_NONE         },
+    { "setHome",                                    LVT_U8,                  offsetof(struct Object, setHome),                                    false, LOT_NONE         },
 //  { "transform",                                  LVT_???,                 offsetof(struct Object, transform),                                  false, LOT_???          }, <--- UNIMPLEMENTED
     { "unused1",                                    LVT_U32,                 offsetof(struct Object, unused1),                                    false, LOT_NONE         },
     { "usingObj",                                   LVT_COBJECT_P,           offsetof(struct Object, usingObj),                                   false, LOT_OBJECT       },
@@ -1721,6 +1774,11 @@ static struct LuaObjectField sPlayerGeometryFields[LUA_PLAYER_GEOMETRY_FIELD_COU
     { "prevFloorHeight", LVT_F32,       offsetof(struct PlayerGeometry, prevFloorHeight), false, LOT_NONE    },
     { "prevFloorType",   LVT_S16,       offsetof(struct PlayerGeometry, prevFloorType),   false, LOT_NONE    },
     { "waterHeight",     LVT_F32,       offsetof(struct PlayerGeometry, waterHeight),     false, LOT_NONE    },
+};
+
+#define LUA_PLAYER_PALETTE_FIELD_COUNT 0
+static struct LuaObjectField sPlayerPaletteFields[LUA_PLAYER_PALETTE_FIELD_COUNT] = {
+//  { "parts", LOT_???, offsetof(struct PlayerPalette, parts), false, LOT_??? }, <--- UNIMPLEMENTED
 };
 
 #define LUA_RAY_INTERSECTION_INFO_FIELD_COUNT 2
@@ -1807,6 +1865,16 @@ static struct LuaObjectField sStarPositionsFields[LUA_STAR_POSITIONS_FIELD_COUNT
     { "WigglerStarPos",       LVT_COBJECT, offsetof(struct StarPositions, WigglerStarPos),       true, LOT_VEC3F },
 };
 
+#define LUA_STARS_NEEDED_FOR_DIALOG_FIELD_COUNT 6
+static struct LuaObjectField sStarsNeededForDialogFields[LUA_STARS_NEEDED_FOR_DIALOG_FIELD_COUNT] = {
+    { "dialog1", LVT_U16, offsetof(struct StarsNeededForDialog, dialog1), false, LOT_NONE },
+    { "dialog2", LVT_U16, offsetof(struct StarsNeededForDialog, dialog2), false, LOT_NONE },
+    { "dialog3", LVT_U16, offsetof(struct StarsNeededForDialog, dialog3), false, LOT_NONE },
+    { "dialog4", LVT_U16, offsetof(struct StarsNeededForDialog, dialog4), false, LOT_NONE },
+    { "dialog5", LVT_U16, offsetof(struct StarsNeededForDialog, dialog5), false, LOT_NONE },
+    { "dialog6", LVT_U16, offsetof(struct StarsNeededForDialog, dialog6), false, LOT_NONE },
+};
+
 #define LUA_STRUCT802_A272_C_FIELD_COUNT 2
 static struct LuaObjectField sStruct802A272CFields[LUA_STRUCT802_A272_C_FIELD_COUNT] = {
     { "vecF", LVT_COBJECT, offsetof(struct Struct802A272C, vecF), true, LOT_VEC3F },
@@ -1854,14 +1922,16 @@ static struct LuaObjectField sTransitionInfoFields[LUA_TRANSITION_INFO_FIELD_COU
     { "posYaw",     LVT_S16,     offsetof(struct TransitionInfo, posYaw),     false, LOT_NONE  },
 };
 
-#define LUA_WALL_COLLISION_DATA_FIELD_COUNT 4
+#define LUA_WALL_COLLISION_DATA_FIELD_COUNT 6
 static struct LuaObjectField sWallCollisionDataFields[LUA_WALL_COLLISION_DATA_FIELD_COUNT] = {
-    { "numWalls", LVT_S16, offsetof(struct WallCollisionData, numWalls), false, LOT_NONE },
-    { "offsetY",  LVT_F32, offsetof(struct WallCollisionData, offsetY),  false, LOT_NONE },
-    { "radius",   LVT_F32, offsetof(struct WallCollisionData, radius),   false, LOT_NONE },
-    { "unused",   LVT_S16, offsetof(struct WallCollisionData, unused),   false, LOT_NONE },
-//  { "walls",    LOT_???, offsetof(struct WallCollisionData, walls),    false, LOT_???  }, <--- UNIMPLEMENTED
-//  { "z",        LVT_???, offsetof(struct WallCollisionData, z),        false, LOT_???  }, <--- UNIMPLEMENTED
+    { "normalAddition", LVT_COBJECT, offsetof(struct WallCollisionData, normalAddition), true,  LOT_VEC3F },
+    { "normalCount",    LVT_U8,      offsetof(struct WallCollisionData, normalCount),    false, LOT_NONE  },
+    { "numWalls",       LVT_S16,     offsetof(struct WallCollisionData, numWalls),       false, LOT_NONE  },
+    { "offsetY",        LVT_F32,     offsetof(struct WallCollisionData, offsetY),        false, LOT_NONE  },
+    { "radius",         LVT_F32,     offsetof(struct WallCollisionData, radius),         false, LOT_NONE  },
+    { "unused",         LVT_S16,     offsetof(struct WallCollisionData, unused),         false, LOT_NONE  },
+//  { "walls",          LOT_???,     offsetof(struct WallCollisionData, walls),          false, LOT_???   }, <--- UNIMPLEMENTED
+//  { "z",              LVT_???,     offsetof(struct WallCollisionData, z),              false, LOT_???   }, <--- UNIMPLEMENTED
 };
 
 #define LUA_WARP_NODE_FIELD_COUNT 4
@@ -1944,6 +2014,7 @@ struct LuaObjectTable sLuaObjectAutogenTable[LOT_AUTOGEN_MAX - LOT_AUTOGEN_MIN] 
     { LOT_CHAINSEGMENT,              sChainSegmentFields,              LUA_CHAIN_SEGMENT_FIELD_COUNT                },
     { LOT_CHARACTER,                 sCharacterFields,                 LUA_CHARACTER_FIELD_COUNT                    },
     { LOT_CONTROLLER,                sControllerFields,                LUA_CONTROLLER_FIELD_COUNT                   },
+    { LOT_CUSTOMLEVELINFO,           sCustomLevelInfoFields,           LUA_CUSTOM_LEVEL_INFO_FIELD_COUNT            },
     { LOT_CUTSCENE,                  sCutsceneFields,                  LUA_CUTSCENE_FIELD_COUNT                     },
     { LOT_CUTSCENESPLINEPOINT,       sCutsceneSplinePointFields,       LUA_CUTSCENE_SPLINE_POINT_FIELD_COUNT        },
     { LOT_CUTSCENEVARIABLE,          sCutsceneVariableFields,          LUA_CUTSCENE_VARIABLE_FIELD_COUNT            },
@@ -1974,12 +2045,14 @@ struct LuaObjectTable sLuaObjectAutogenTable[LOT_AUTOGEN_MAX - LOT_AUTOGEN_MIN] 
     { LOT_PARALLELTRACKINGPOINT,     sParallelTrackingPointFields,     LUA_PARALLEL_TRACKING_POINT_FIELD_COUNT      },
     { LOT_PLAYERCAMERASTATE,         sPlayerCameraStateFields,         LUA_PLAYER_CAMERA_STATE_FIELD_COUNT          },
     { LOT_PLAYERGEOMETRY,            sPlayerGeometryFields,            LUA_PLAYER_GEOMETRY_FIELD_COUNT              },
+    { LOT_PLAYERPALETTE,             sPlayerPaletteFields,             LUA_PLAYER_PALETTE_FIELD_COUNT               },
     { LOT_RAYINTERSECTIONINFO,       sRayIntersectionInfoFields,       LUA_RAY_INTERSECTION_INFO_FIELD_COUNT        },
     { LOT_SERVERSETTINGS,            sServerSettingsFields,            LUA_SERVER_SETTINGS_FIELD_COUNT              },
     { LOT_SOUNDSTATE,                sSoundStateFields,                LUA_SOUND_STATE_FIELD_COUNT                  },
     { LOT_SPAWNINFO,                 sSpawnInfoFields,                 LUA_SPAWN_INFO_FIELD_COUNT                   },
     { LOT_SPAWNPARTICLESINFO,        sSpawnParticlesInfoFields,        LUA_SPAWN_PARTICLES_INFO_FIELD_COUNT         },
     { LOT_STARPOSITIONS,             sStarPositionsFields,             LUA_STAR_POSITIONS_FIELD_COUNT               },
+    { LOT_STARSNEEDEDFORDIALOG,      sStarsNeededForDialogFields,      LUA_STARS_NEEDED_FOR_DIALOG_FIELD_COUNT      },
     { LOT_STRUCT802A272C,            sStruct802A272CFields,            LUA_STRUCT802_A272_C_FIELD_COUNT             },
     { LOT_SURFACE,                   sSurfaceFields,                   LUA_SURFACE_FIELD_COUNT                      },
     { LOT_TEXTUREINFO,               sTextureInfoFields,               LUA_TEXTURE_INFO_FIELD_COUNT                 },
