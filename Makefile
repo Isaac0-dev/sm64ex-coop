@@ -914,6 +914,8 @@ endif
 
 # Zlib
 LDFLAGS += -lz
+# libcurl
+LDFLAGS += -lcurl
 
 # Lua
 ifeq ($(WINDOWS_BUILD),1)

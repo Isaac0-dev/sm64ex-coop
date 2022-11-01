@@ -375,6 +375,8 @@ void main_func(void) {
     discord_init();
 #endif
 
+    check_for_updates();
+
     while (true) {
         wm_api->main_loop(produce_one_frame);
 #ifdef DISCORDRPC

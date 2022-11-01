@@ -6,5 +6,6 @@
 
 #define MAX_VERSION_LENGTH 10
 char* get_version(void);
+void check_for_updates(void);
 
 #endif
